@@ -19,6 +19,7 @@
 #define GxEPD_GREEN     0x07E0 //   0, 255,   0
 #define GxEPD_ORANGE    0xFD20 // 255, 165,   0
 
+namespace emw3_gxepd2{
 class GxEPD2
 {
   public:
@@ -76,5 +77,5 @@ class GxEPD2
       GDEH075Z90,  Waveshare_7_5_bwr_Z90 = GDEH075Z90
     };
 };
-
+} //namespace
 #endif

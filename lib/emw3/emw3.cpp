@@ -15,6 +15,7 @@ EMW3::EMW3(){
   setPaletteColor(1,GxEPD_WHITE);
   //createSprite(EPD_WIDTH,EPD_HEIGHT);
   _buffer = buff;
+  ESP.wdtEnable(1000);
 }
 void EMW3::rotation(int rot){
   rot &=7;
@@ -32,6 +33,7 @@ void EMW3::rotation(int rot){
   //new 7  old 2
   setRotation(rot);
 }
+/*
 void EMW3::dispWindow(int16_t x,int16_t y,int16_t w,int16_t h){
   ;
-}
+}*/

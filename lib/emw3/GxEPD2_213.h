@@ -17,7 +17,7 @@ typedef struct {
   int16_t py;
   int16_t pw;
   int16_t ph;
-  uint8_t partial_update_mode; // 0 无刷新  1 全刷  2 局刷  3 窗口局刷
+  //int16_t update_mode; // -1 无刷新  0 全刷  1 局刷  2 窗口局刷
 } _refresh_status_t;
 
 class GxEPD2_213 : public GxEPD2_EPD
@@ -25,12 +25,15 @@ class GxEPD2_213 : public GxEPD2_EPD
   public:
     GxEPD2_213();
     void init(bool initial = true, uint16_t reset_duration = 20, bool pulldown_rst_mode = false);
-    void fill(uint16_t color); // 0x0 black, >0x0 white, to buffer
+    //void fill(uint16_t color); // 0x0 black, >0x0 white, to buffer
     // display buffer content to screen, useful for full screen buffer
-    void Display(bool partial_update_mode = false);
-    void displayWindow(uint16_t x, uint16_t y, uint16_t w, uint16_t h);
+    void _display(uint8_t partial_update_mode);
+    void displayWindow(uint16_t x, uint16_t y, uint16_t w, uint16_t h, bool async = true);
     void setFullWindow();
     void setPartialWindow(uint16_t x, uint16_t y, uint16_t w, uint16_t h);
+    void startTr();
+    void endTr();
+    friend IRAM_ATTR void _rSfr_Cal_lBack_(_refresh_status_t *);
   private:
     template <typename T> static inline void
     _swap_(T & a, T & b)
@@ -56,17 +59,11 @@ class GxEPD2_213 : public GxEPD2_EPD
     uint16_t _pw_x, _pw_y, _pw_w, _pw_h;
   protected:
     uint8_t *_buffer;
- /**
-  * @brief 标记刷新状态: 0 未正在刷新 1 在传输数据  2 在等待刷新完毕 
-  * 中断会更改此数值
-  * >=4: 手动模式 */
-    volatile uint8_t _refreshing;
-
-
+    
     /// @brief 来自GxEPD2_213.h
   public:
-    static const uint16_t WIDTH = 128;
-    static const uint16_t HEIGHT = 250;
+    static const uint16_t WIDTH = EMW3_WIDTH;
+    static const uint16_t HEIGHT = EMW3_HEIGHT;
     static const GxEPD2::Panel panel = GxEPD2::GDE0213B1;
     static const bool hasColor = false;
     static const bool hasPartialUpdate = true;
@@ -75,7 +72,7 @@ class GxEPD2_213 : public GxEPD2_EPD
 
     // methods (virtual)
     //  Support for Bitmaps (Sprites) to Controller Buffer and to Screen
-    void clearScreen(uint8_t value = 0xFF); // init controller memory and screen (default white)
+    //void clearScreen(uint8_t value = 0xFF); // init controller memory and screen (default white)
     void writeScreenBuffer(uint8_t value = 0xFF); // init controller memory (default white)
     // write to controller memory, without screen refresh; x and w should be multiple of 8
     void writeImage(const uint8_t bitmap[], int16_t x, int16_t y, int16_t w, int16_t h, bool invert = false, bool mirror_y = false, bool pgm = false);
@@ -97,6 +94,9 @@ class GxEPD2_213 : public GxEPD2_EPD
     void drawNative(const uint8_t* data1, const uint8_t* data2, int16_t x, int16_t y, int16_t w, int16_t h, bool invert = false, bool mirror_y = false, bool pgm = false);
     void refresh(bool partial_update_mode = false); // screen refresh from controller memory to full screen
     void refresh(int16_t x, int16_t y, int16_t w, int16_t h); // screen refresh from controller memory, partial screen
+    void refreshNoDelay(bool partial_update_mode = false); // screen refresh without delay() function
+    void refreshNoDelay(int16_t x, int16_t y, int16_t w, int16_t h); // screen refresh partial without delay() function
+    
     void powerOff(); // turns off generation of panel driving voltages, avoids screen fading over time
     void hibernate(); // turns powerOff() and sets controller to deep sleep for minimum power use, ONLY if wakeable by RST (rst >= 0)
   private:
@@ -112,9 +112,12 @@ class GxEPD2_213 : public GxEPD2_EPD
     void _Init_Part();
     void _Update_Full();
     void _Update_Part();
+    void _Update_Full_noDelay();
+    void _Update_Part_noDelay();
   private:
     static const uint8_t LUTDefault_part[];
     static const uint8_t LUTDefault_full[];
+    _refresh_status_t _rSf;
 };
 
 }// namespace 

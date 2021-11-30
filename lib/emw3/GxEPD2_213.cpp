@@ -4,6 +4,27 @@ namespace emw3_gxepd2{
 
   #define gx_uint16_min(a,b) ((a) < (b) ? (a) : (b))
   #define gx_uint16_max(a,b) ((a) > (b) ? (a) : (b))
+
+GxEPD2_213::GxEPD2_213() :
+  GxEPD2_EPD(HIGH, 10000000, WIDTH, HEIGHT, panel, hasColor, hasPartialUpdate, hasFastPartialUpdate)
+{
+      _page_height = EMW3_HEIGHT;
+      _pages = 1;
+      _reverse = 1;
+      _mirror = false;
+      _using_partial_mode = false;
+      _current_page = 0;
+      _refreshing = 0;
+      _rSf.driver = this;
+}
+void GxEPD2_213 ::startTr(){
+  _refreshing = 1;
+  SPI.beginTransaction(_spi_settings);
+}
+void GxEPD2_213 ::endTr(){
+  SPI.endTransaction();
+  _refreshing = 0;
+}
     void GxEPD2_213::init(bool initial, uint16_t reset_duration, bool pulldown_rst_mode)
     {
       GxEPD2_EPD::init(initial, reset_duration, pulldown_rst_mode);
@@ -11,7 +32,7 @@ namespace emw3_gxepd2{
       _current_page = 0;
       setFullWindow();
     }
-
+/*
     void GxEPD2_213::fill(uint16_t color){
       uint8_t data = (color == GxEPD_BLACK) ? 0x00 : 0xFF;
       for (uint16_t x = 0; x < sizeof(_buffer); x++)
@@ -19,32 +40,82 @@ namespace emw3_gxepd2{
         _buffer[x] = data;
       }
     }
+*/
 
-    void GxEPD2_213::Display(bool partial_update_mode ){
-      if (partial_update_mode) writeImage(_buffer, 0, 0, WIDTH, _page_height);
-      else writeImageForFullRefresh(_buffer, 0, 0, WIDTH, _page_height);
-      refresh(partial_update_mode);
-      if (hasFastPartialUpdate)
-      {
-        writeImageAgain(_buffer, 0, 0, WIDTH, _page_height);
-      }
-      if (!partial_update_mode) powerOff();
+IRAM_ATTR void _rSfr_Cal_lBack_(_refresh_status_t *_fb){
+  Serial.print('t');
+  detachInterrupt(EMW3_EPD_BUSY_PIN);
+  _fb->driver->_refreshing = 1;
+  SPI.beginTransaction(_fb->driver->_spi_settings);
+  _fb->driver->_writeCommand(0xff);
+  if(_fb->driver->_refreshing>=4) 
+    _fb->driver->writeImagePart(_fb->driver->_buffer,_fb->px,_fb->py,_fb->pw,_fb->ph,
+    _fb->x,_fb->y,_fb->w,_fb->h);
+  else _fb->driver->writeImage(_fb->driver->_buffer,_fb->x,_fb->y,_fb->w,_fb->h);
+  if (2==_fb->driver->_refreshing) _fb->driver->powerOff();
+  SPI.endTransaction();
+  _fb->driver->_refreshing = 0;
+}
+  void GxEPD2_213::_display(uint8_t partial_update_mode ){
+    if(_refreshing){ //上一次刷新还没结束
+      return;
     }
+    if(partial_update_mode&2){
+      startTr();
+      writeImage(_buffer, 0, 0, WIDTH, _page_height);
+      refreshNoDelay(partial_update_mode&1);
+      endTr();
+      _refreshing = 2 | (partial_update_mode&1);
+      _rSf.x = 0;
+      _rSf.y = 0;
+      _rSf.w = WIDTH;
+      _rSf.h = _page_height;
+      attachInterruptArg(EMW3_EPD_BUSY_PIN,(void(*)(void *))_rSfr_Cal_lBack_,&_rSf,FALLING);
+    }
+    else {
+      startTr();
+      writeImage(_buffer, 0, 0, WIDTH, _page_height);
+      refresh(partial_update_mode);
+      writeImage(_buffer, 0, 0, WIDTH, _page_height);
+      if (!partial_update_mode) powerOff();
+      endTr();
+    }
+  }
 
-    void GxEPD2_213::displayWindow(uint16_t x, uint16_t y, uint16_t w, uint16_t h)
-    {
+  void GxEPD2_213::displayWindow(uint16_t x, uint16_t y, uint16_t w, uint16_t h, bool async){
+    if(_refreshing){ //上一次刷新还没结束
+      return;
+    }
       x = gx_uint16_min(x, EMW3_WIDTH);
       y = gx_uint16_min(y, EMW3_HEIGHT);
       w = gx_uint16_min(w, EMW3_WIDTH - x);
       h = gx_uint16_min(h, EMW3_HEIGHT - y);
       uint16_t y_part = _reverse ? HEIGHT - h - y : y;
+    
+    if(async){
+      startTr();
+      writeImagePart(_buffer, x, y_part, WIDTH, _page_height, x, y, w, h);
+      refreshNoDelay(x, y, w, h);
+      endTr();
+      _refreshing = 4;
+      _rSf.px = 0;
+      _rSf.py = y_part;
+      _rSf.pw = WIDTH;
+      _rSf.ph = _page_height;
+      _rSf.x = x;
+      _rSf.y = y;
+      _rSf.w = w;
+      _rSf.h = h;
+      attachInterruptArg(EMW3_EPD_BUSY_PIN,(void(*)(void *))_rSfr_Cal_lBack_,&_rSf,FALLING);
+    }
+    else {
+      startTr();
       writeImagePart(_buffer, x, y_part, WIDTH, _page_height, x, y, w, h);
       refresh(x, y, w, h);
-      if (hasFastPartialUpdate)
-      {
-        writeImagePartAgain(_buffer, x, y_part, WIDTH, _page_height, x, y, w, h);
-      }
+      writeImagePart(_buffer, x, y_part, WIDTH, _page_height, x, y, w, h);
+      endTr();
     }
+  }
     void GxEPD2_213::setFullWindow(){
       _using_partial_mode = false;
       _pw_x = 0;
@@ -66,20 +137,7 @@ namespace emw3_gxepd2{
       _pw_x -= _pw_x % 8;
     }
 
-//重点-=------------------------=-------------------------------------------------------------====----
-GxEPD2_213::GxEPD2_213() :
-  GxEPD2_EPD(HIGH, 10000000, WIDTH, HEIGHT, panel, hasColor, hasPartialUpdate, hasFastPartialUpdate)
-{
-      _page_height = EMW3_HEIGHT;
-      _pages = (HEIGHT / _page_height) + ((HEIGHT % _page_height) > 0);
-      _reverse = 1;
-      _mirror = false;
-      _using_partial_mode = false;
-      _current_page = 0;
-      setFullWindow();
-}
-
-void GxEPD2_213::clearScreen(uint8_t value)
+/* void GxEPD2_213::clearScreen(uint8_t value)
 {
   _initial_write = false; // initial full screen buffer clean done
   if (_initial_refresh)
@@ -113,18 +171,22 @@ void GxEPD2_213::clearScreen(uint8_t value)
     _writeData(value);
   }
   _Update_Part();
-}
+}*/
 
 void GxEPD2_213::writeScreenBuffer(uint8_t value)
 {
   _initial_write = false; // initial full screen buffer clean done
   // this controller has no command to write "old data"
-  if (_initial_refresh) clearScreen(value);
-  else _writeScreenBuffer(value);
+  startTr();
+  /*if (_initial_refresh) clearScreen(value);
+  else */
+  _writeScreenBuffer(value);
+  endTr();
 }
 
 void GxEPD2_213::_writeScreenBuffer(uint8_t value)
 {
+  startTr();
   if (!_using_partial_mode) _Init_Part();
   _setPartialRamArea(0, 0, WIDTH, HEIGHT);
   _writeCommand(0x24);
@@ -132,12 +194,12 @@ void GxEPD2_213::_writeScreenBuffer(uint8_t value)
   {
     _writeData(value);
   }
+  endTr();
 }
 
 void GxEPD2_213::writeImage(const uint8_t bitmap[], int16_t x, int16_t y, int16_t w, int16_t h, bool invert, bool mirror_y, bool pgm)
 {
   if (_initial_write) writeScreenBuffer(); // initial full screen buffer clean
-  delay(0); // yield() to avoid WDT on ESP8266 and ESP32
   int16_t wb = (w + 7) / 8; // width bytes, bitmaps are padded
   x -= x % 8; // byte boundary
   w = wb * 8; // byte boundary
@@ -150,6 +212,7 @@ void GxEPD2_213::writeImage(const uint8_t bitmap[], int16_t x, int16_t y, int16_
   w1 -= dx;
   h1 -= dy;
   if ((w1 <= 0) || (h1 <= 0)) return;
+  startTr();
   if (!_using_partial_mode) _Init_Part();
   _setPartialRamArea(x1, y1, w1, h1);
   _writeCommand(0x24);
@@ -160,30 +223,19 @@ void GxEPD2_213::writeImage(const uint8_t bitmap[], int16_t x, int16_t y, int16_
       uint8_t data;
       // use wb, h of bitmap for index!
       int16_t idx = mirror_y ? j + dx / 8 + (h - 1 - i) * wb : j + dx / 8 + i * wb;
-      if (pgm)
-      {
-#if defined(__AVR) || defined(ESP8266) || defined(ESP32)
-        data = pgm_read_byte(&bitmap[idx]);
-#else
-        data = bitmap[idx];
-#endif
-      }
-      else
-      {
-        data = bitmap[idx];
-      }
+      if (pgm) data = pgm_read_byte(&bitmap[idx]);
+      else data = bitmap[idx];
       if (invert) data = ~data;
       _writeData(data);
     }
   }
-  delay(0); // yield() to avoid WDT on ESP8266 and ESP32
+  endTr();
 }
 
 void GxEPD2_213::writeImagePart(const uint8_t bitmap[], int16_t x_part, int16_t y_part, int16_t w_bitmap, int16_t h_bitmap,
                                 int16_t x, int16_t y, int16_t w, int16_t h, bool invert, bool mirror_y, bool pgm)
 {
   if (_initial_write) writeScreenBuffer(); // initial full screen buffer clean
-  delay(0); // yield() to avoid WDT on ESP8266 and ESP32
   if ((w_bitmap < 0) || (h_bitmap < 0) || (w < 0) || (h < 0)) return;
   if ((x_part < 0) || (x_part >= w_bitmap)) return;
   if ((y_part < 0) || (y_part >= h_bitmap)) return;
@@ -202,6 +254,7 @@ void GxEPD2_213::writeImagePart(const uint8_t bitmap[], int16_t x_part, int16_t 
   w1 -= dx;
   h1 -= dy;
   if ((w1 <= 0) || (h1 <= 0)) return;
+  startTr();
   if (!_using_partial_mode) _Init_Part();
   _setPartialRamArea(x1, y1, w1, h1);
   _writeCommand(0x24);
@@ -212,23 +265,13 @@ void GxEPD2_213::writeImagePart(const uint8_t bitmap[], int16_t x_part, int16_t 
       uint8_t data;
       // use wb_bitmap, h_bitmap of bitmap for index!
       int16_t idx = mirror_y ? x_part / 8 + j + dx / 8 + ((h_bitmap - 1 - (y_part + i + dy))) * wb_bitmap : x_part / 8 + j + dx / 8 + (y_part + i + dy) * wb_bitmap;
-      if (pgm)
-      {
-#if defined(__AVR) || defined(ESP8266) || defined(ESP32)
-        data = pgm_read_byte(&bitmap[idx]);
-#else
-        data = bitmap[idx];
-#endif
-      }
-      else
-      {
-        data = bitmap[idx];
-      }
+      if (pgm) data = pgm_read_byte(&bitmap[idx]);
+      else data = bitmap[idx];
       if (invert) data = ~data;
       _writeData(data);
     }
   }
-  delay(0); // yield() to avoid WDT on ESP8266 and ESP32
+  endTr();
 }
 
 void GxEPD2_213::writeImage(const uint8_t* black, const uint8_t* color, int16_t x, int16_t y, int16_t w, int16_t h, bool invert, bool mirror_y, bool pgm)
@@ -299,10 +342,21 @@ void GxEPD2_213::refresh(bool partial_update_mode)
   else
   {
     if (_using_partial_mode) _Init_Full();
-    _Update_Full();
     _initial_refresh = false; // initial full update done
+    _Update_Full();
   }
 }
+void GxEPD2_213::refreshNoDelay(bool partial_update_mode)
+{
+  if (partial_update_mode) refreshNoDelay(0, 0, WIDTH, HEIGHT);
+  else
+  {
+    if (_using_partial_mode) _Init_Full();
+    _initial_refresh = false; // initial full update done
+    _Update_Full_noDelay();
+  }
+}
+
 
 void GxEPD2_213::refresh(int16_t x, int16_t y, int16_t w, int16_t h)
 {
@@ -322,6 +376,25 @@ void GxEPD2_213::refresh(int16_t x, int16_t y, int16_t w, int16_t h)
   if (!_using_partial_mode) _Init_Part();
   _setPartialRamArea(x1, y1, w1, h1);
   _Update_Part();
+}
+void GxEPD2_213::refreshNoDelay(int16_t x, int16_t y, int16_t w, int16_t h)
+{
+  if (_initial_refresh) return refresh(false); // initial update needs be full update
+  // intersection with screen
+  int16_t w1 = x < 0 ? w + x : w; // reduce
+  int16_t h1 = y < 0 ? h + y : h; // reduce
+  int16_t x1 = x < 0 ? 0 : x; // limit
+  int16_t y1 = y < 0 ? 0 : y; // limit
+  w1 = x1 + w1 < int16_t(WIDTH) ? w1 : int16_t(WIDTH) - x1; // limit
+  h1 = y1 + h1 < int16_t(HEIGHT) ? h1 : int16_t(HEIGHT) - y1; // limit
+  if ((w1 <= 0) || (h1 <= 0)) return; 
+  // make x1, w1 multiple of 8
+  w1 += x1 % 8;
+  if (w1 % 8 > 0) w1 += 8 - w1 % 8;
+  x1 -= x1 % 8;
+  if (!_using_partial_mode) _Init_Part();
+  _setPartialRamArea(x1, y1, w1, h1);
+  _Update_Part_noDelay();
 }
 
 void GxEPD2_213::powerOff(void)
@@ -366,7 +439,9 @@ void GxEPD2_213::_PowerOn()
     _writeCommand(0x22);
     _writeData(0xc0);
     _writeCommand(0x20);
-    _waitWhileBusy("_PowerOn", 0);
+    //_waitWhileBusy("_PowerOn", 0);
+  //此处不可以使用 yield 或者 delay 因为这些函数在中断里面也会被调用
+    while(digitalRead(EMW3_EPD_BUSY_PIN) == _busy_level) ESP.wdtFeed();
   }
   _power_is_on = true;
 }
@@ -376,7 +451,8 @@ void GxEPD2_213::_PowerOff()
   _writeCommand(0x22);
   _writeData(0xc3);
   _writeCommand(0x20);
-  _waitWhileBusy("_PowerOff", 0);
+  //_waitWhileBusy("_PowerOff", 0);
+  //while(digitalRead(EMW3_EPD_BUSY_PIN) == _busy_level) yield();
   _power_is_on = false;
   _using_partial_mode = false;
 }
@@ -435,7 +511,9 @@ void GxEPD2_213::_Update_Full()
   _writeCommand(0x22);
   _writeData(0xc4);
   _writeCommand(0x20);
-  _waitWhileBusy("_Update_Full", 0);
+  //_waitWhileBusy("_Update_Full", 0);
+  //此处不可以使用 yield 或者 delay 因为这些函数在中断里面也会被调用
+  while(digitalRead(EMW3_EPD_BUSY_PIN) == _busy_level) ESP.wdtFeed();
   _writeCommand(0xff);
 }
 
@@ -444,9 +522,29 @@ void GxEPD2_213::_Update_Part()
   _writeCommand(0x22);
   _writeData(0x04);
   _writeCommand(0x20);
-  _waitWhileBusy("_Update_Part", 0);
+  //_waitWhileBusy("_Update_Part", 0);
+  //此处不可以使用 yield 或者 delay 因为这些函数在中断里面也会被调用
+  while(digitalRead(EMW3_EPD_BUSY_PIN) == _busy_level) ESP.wdtFeed();
   _writeCommand(0xff);
 }
 
+void GxEPD2_213::_Update_Full_noDelay()
+{
+  _writeCommand(0x22);
+  _writeData(0xc4);
+  _writeCommand(0x20);
+  ESP.wdtFeed();
+  //_waitWhileBusy("_Update_Full", 0);
+
+}
+
+void GxEPD2_213::_Update_Part_noDelay()
+{
+  _writeCommand(0x22);
+  _writeData(0x04);
+  _writeCommand(0x20);
+  ESP.wdtFeed();
+  //_waitWhileBusy("_Update_Part", 0);
+}
 
 } //namespace 

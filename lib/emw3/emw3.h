@@ -13,9 +13,9 @@ using namespace emw3_gxepd2;
 class EMW3 : public GxEPD2_213, public LGFX_Sprite {
   public:
     EMW3();
-    inline void display(bool part) { Display(part); }
+    inline void display(uint8_t part = 1) { _display(part); }
     void rotation(int rot);
-    void dispWindow(int16_t x,int16_t y,int16_t w,int16_t h);
+    // void dispWindow(int16_t x,int16_t y,int16_t w,int16_t h);
   private:
     //for 250 * 122 sized buffer
     static unsigned char buff [4000];
