@@ -28,9 +28,14 @@ void GxEPD2_213 ::endTr(){
     void GxEPD2_213::init(bool initial, uint16_t reset_duration, bool pulldown_rst_mode)
     {
       GxEPD2_EPD::init(initial, reset_duration, pulldown_rst_mode);
-      _using_partial_mode = false;
+      _using_partial_mode = true;
       _current_page = 0;
-      setFullWindow();
+      next_frame = 0;
+      _rSf.px = 0;
+      _rSf.py = 0;
+      _rSf.pw = 0;
+      _rSf.ph = 0;
+      //setFullWindow();
     }
 /*
     void GxEPD2_213::fill(uint16_t color){
@@ -43,69 +48,71 @@ void GxEPD2_213 ::endTr(){
 */
 
 IRAM_ATTR void _rSfr_Cal_lBack_(_refresh_status_t *_fb){
-  Serial.print('t');
   detachInterrupt(EMW3_EPD_BUSY_PIN);
-  _fb->driver->_refreshing = 1;
   SPI.beginTransaction(_fb->driver->_spi_settings);
   _fb->driver->_writeCommand(0xff);
-  if(_fb->driver->_refreshing>=4) 
-    _fb->driver->writeImagePart(_fb->driver->_buffer,_fb->px,_fb->py,_fb->pw,_fb->ph,
+  if(_fb->driver->_refreshing>=4) {
+    _fb->driver->writeImagePart(_fb->driver->_buffer,0,0,_fb->driver->WIDTH,_fb->driver->HEIGHT,
+    _fb->px,_fb->py,_fb->pw,_fb->ph);
+    _fb->driver->writeImagePart(_fb->driver->_buffer,0,0,_fb->driver->WIDTH,_fb->driver->HEIGHT,
     _fb->x,_fb->y,_fb->w,_fb->h);
-  else _fb->driver->writeImage(_fb->driver->_buffer,_fb->x,_fb->y,_fb->w,_fb->h);
+  }
+  else _fb->driver->writeImage(_fb->driver->_buffer,0,0,_fb->driver->WIDTH,_fb->driver->HEIGHT);
   if (2==_fb->driver->_refreshing) _fb->driver->powerOff();
   SPI.endTransaction();
   _fb->driver->_refreshing = 0;
+  if(_fb->driver->next_frame ==1) _fb->driver->_display(3);
+  else if(_fb->driver->next_frame ==2) _fb->driver->displayWindow(_fb->x,_fb->y,_fb->w,_fb->h,1);
 }
   void GxEPD2_213::_display(uint8_t partial_update_mode ){
-    if(_refreshing){ //上一次刷新还没结束
-      return;
-    }
+      if(_refreshing){ //上一次刷新还没结束
+        next_frame = 1;
+        return;
+      }
     if(partial_update_mode&2){
       startTr();
       writeImage(_buffer, 0, 0, WIDTH, _page_height);
-      refreshNoDelay(partial_update_mode&1);
+      refresh(partial_update_mode&1);
+      writeImage(_buffer, 0, 0, WIDTH, _page_height);
+      if (!partial_update_mode&1) powerOff();
       endTr();
-      _refreshing = 2 | (partial_update_mode&1);
-      _rSf.x = 0;
-      _rSf.y = 0;
-      _rSf.w = WIDTH;
-      _rSf.h = _page_height;
-      attachInterruptArg(EMW3_EPD_BUSY_PIN,(void(*)(void *))_rSfr_Cal_lBack_,&_rSf,FALLING);
     }
     else {
       startTr();
       writeImage(_buffer, 0, 0, WIDTH, _page_height);
-      refresh(partial_update_mode);
-      writeImage(_buffer, 0, 0, WIDTH, _page_height);
-      if (!partial_update_mode) powerOff();
+      refreshNoDelay(partial_update_mode);
       endTr();
+      _refreshing = 2 | (partial_update_mode);
+      attachInterruptArg(EMW3_EPD_BUSY_PIN,(void(*)(void *))_rSfr_Cal_lBack_,&_rSf,FALLING);
     }
+    next_frame = 0;
   }
 
   void GxEPD2_213::displayWindow(uint16_t x, uint16_t y, uint16_t w, uint16_t h, bool async){
-    if(_refreshing){ //上一次刷新还没结束
-      return;
-    }
+      if(_refreshing){ //上一次刷新还没结束
+        next_frame = 2;
+        _rSf.x = x;
+        _rSf.y = y;
+        _rSf.w = w;
+        _rSf.h = h;
+        return;
+      }
       x = gx_uint16_min(x, EMW3_WIDTH);
       y = gx_uint16_min(y, EMW3_HEIGHT);
       w = gx_uint16_min(w, EMW3_WIDTH - x);
       h = gx_uint16_min(h, EMW3_HEIGHT - y);
       uint16_t y_part = _reverse ? HEIGHT - h - y : y;
-    
     if(async){
       startTr();
+      //writeImagePart(_buffer, x, y_part, WIDTH, _page_height, _rSf.px, _rSf.py, _rSf.pw, _rSf.ph);
       writeImagePart(_buffer, x, y_part, WIDTH, _page_height, x, y, w, h);
       refreshNoDelay(x, y, w, h);
       endTr();
       _refreshing = 4;
-      _rSf.px = 0;
-      _rSf.py = y_part;
-      _rSf.pw = WIDTH;
-      _rSf.ph = _page_height;
-      _rSf.x = x;
-      _rSf.y = y;
-      _rSf.w = w;
-      _rSf.h = h;
+      _rSf.px = x;
+      _rSf.py = y;
+      _rSf.pw = w;
+      _rSf.ph = h;
       attachInterruptArg(EMW3_EPD_BUSY_PIN,(void(*)(void *))_rSfr_Cal_lBack_,&_rSf,FALLING);
     }
     else {
@@ -115,6 +122,7 @@ IRAM_ATTR void _rSfr_Cal_lBack_(_refresh_status_t *_fb){
       writeImagePart(_buffer, x, y_part, WIDTH, _page_height, x, y, w, h);
       endTr();
     }
+    next_frame = 0;
   }
     void GxEPD2_213::setFullWindow(){
       _using_partial_mode = false;
@@ -177,16 +185,13 @@ void GxEPD2_213::writeScreenBuffer(uint8_t value)
 {
   _initial_write = false; // initial full screen buffer clean done
   // this controller has no command to write "old data"
-  startTr();
   /*if (_initial_refresh) clearScreen(value);
   else */
   _writeScreenBuffer(value);
-  endTr();
 }
 
 void GxEPD2_213::_writeScreenBuffer(uint8_t value)
 {
-  startTr();
   if (!_using_partial_mode) _Init_Part();
   _setPartialRamArea(0, 0, WIDTH, HEIGHT);
   _writeCommand(0x24);
@@ -194,7 +199,6 @@ void GxEPD2_213::_writeScreenBuffer(uint8_t value)
   {
     _writeData(value);
   }
-  endTr();
 }
 
 void GxEPD2_213::writeImage(const uint8_t bitmap[], int16_t x, int16_t y, int16_t w, int16_t h, bool invert, bool mirror_y, bool pgm)
@@ -212,7 +216,6 @@ void GxEPD2_213::writeImage(const uint8_t bitmap[], int16_t x, int16_t y, int16_
   w1 -= dx;
   h1 -= dy;
   if ((w1 <= 0) || (h1 <= 0)) return;
-  startTr();
   if (!_using_partial_mode) _Init_Part();
   _setPartialRamArea(x1, y1, w1, h1);
   _writeCommand(0x24);
@@ -229,7 +232,6 @@ void GxEPD2_213::writeImage(const uint8_t bitmap[], int16_t x, int16_t y, int16_
       _writeData(data);
     }
   }
-  endTr();
 }
 
 void GxEPD2_213::writeImagePart(const uint8_t bitmap[], int16_t x_part, int16_t y_part, int16_t w_bitmap, int16_t h_bitmap,
@@ -254,7 +256,6 @@ void GxEPD2_213::writeImagePart(const uint8_t bitmap[], int16_t x_part, int16_t 
   w1 -= dx;
   h1 -= dy;
   if ((w1 <= 0) || (h1 <= 0)) return;
-  startTr();
   if (!_using_partial_mode) _Init_Part();
   _setPartialRamArea(x1, y1, w1, h1);
   _writeCommand(0x24);
@@ -271,7 +272,6 @@ void GxEPD2_213::writeImagePart(const uint8_t bitmap[], int16_t x_part, int16_t 
       _writeData(data);
     }
   }
-  endTr();
 }
 
 void GxEPD2_213::writeImage(const uint8_t* black, const uint8_t* color, int16_t x, int16_t y, int16_t w, int16_t h, bool invert, bool mirror_y, bool pgm)
@@ -301,39 +301,49 @@ void GxEPD2_213::writeNative(const uint8_t* data1, const uint8_t* data2, int16_t
 
 void GxEPD2_213::drawImage(const uint8_t bitmap[], int16_t x, int16_t y, int16_t w, int16_t h, bool invert, bool mirror_y, bool pgm)
 {
+  startTr();
   writeImage(bitmap, x, y, w, h, invert, mirror_y, pgm);
   refresh(x, y, w, h);
   writeImage(bitmap, x, y, w, h, invert, mirror_y, pgm);
+  endTr();
 }
 
 void GxEPD2_213::drawImagePart(const uint8_t bitmap[], int16_t x_part, int16_t y_part, int16_t w_bitmap, int16_t h_bitmap,
                                int16_t x, int16_t y, int16_t w, int16_t h, bool invert, bool mirror_y, bool pgm)
 {
+  startTr();
   writeImagePart(bitmap, x_part, y_part, w_bitmap, h_bitmap, x, y, w, h, invert, mirror_y, pgm);
   refresh(x, y, w, h);
   writeImagePart(bitmap, x_part, y_part, w_bitmap, h_bitmap, x, y, w, h, invert, mirror_y, pgm);
+  endTr();
 }
 
 void GxEPD2_213::drawImage(const uint8_t* black, const uint8_t* color, int16_t x, int16_t y, int16_t w, int16_t h, bool invert, bool mirror_y, bool pgm)
 {
+  startTr();
   writeImage(black, color, x, y, w, h, invert, mirror_y, pgm);
   refresh(x, y, w, h);
   writeImage(black, color, x, y, w, h, invert, mirror_y, pgm);
+  endTr();
 }
 
 void GxEPD2_213::drawImagePart(const uint8_t* black, const uint8_t* color, int16_t x_part, int16_t y_part, int16_t w_bitmap, int16_t h_bitmap,
                                int16_t x, int16_t y, int16_t w, int16_t h, bool invert, bool mirror_y, bool pgm)
 {
+  startTr();
   writeImagePart(black, color, x_part, y_part, w_bitmap, h_bitmap, x, y, w, h, invert, mirror_y, pgm);
   refresh(x, y, w, h);
   writeImagePart(black, color, x_part, y_part, w_bitmap, h_bitmap, x, y, w, h, invert, mirror_y, pgm);
+  endTr();
 }
 
 void GxEPD2_213::drawNative(const uint8_t* data1, const uint8_t* data2, int16_t x, int16_t y, int16_t w, int16_t h, bool invert, bool mirror_y, bool pgm)
 {
+  startTr();
   writeNative(data1, data2, x, y, w, h, invert, mirror_y, pgm);
   refresh(x, y, w, h);
   writeNative(data1, data2, x, y, w, h, invert, mirror_y, pgm);
+  endTr();
 }
 
 void GxEPD2_213::refresh(bool partial_update_mode)

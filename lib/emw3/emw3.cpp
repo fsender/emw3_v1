@@ -13,6 +13,7 @@ EMW3::EMW3(){
   setBuffer(static_cast<uint8_t*>(buff),EMW3_REAL_WIDTH,EMW3_HEIGHT,1);
   setPaletteColor(0,GxEPD_BLACK);
   setPaletteColor(1,GxEPD_WHITE);
+  setRotation(7); // real val:0
   //createSprite(EPD_WIDTH,EPD_HEIGHT);
   _buffer = buff;
   ESP.wdtEnable(1000);

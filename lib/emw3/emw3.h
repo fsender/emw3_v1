@@ -13,7 +13,11 @@ using namespace emw3_gxepd2;
 class EMW3 : public GxEPD2_213, public LGFX_Sprite {
   public:
     EMW3();
-    inline void display(uint8_t part = 1) { _display(part); }
+    /**
+     * @brief 刷屏
+     * @param part 0:无延时全刷    1:无延时快刷     2: 全刷     3: 快刷
+     */
+    inline void display(uint8_t part = 3) { _display(part); }
     void rotation(int rot);
     // void dispWindow(int16_t x,int16_t y,int16_t w,int16_t h);
   private:

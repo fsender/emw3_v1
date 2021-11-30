@@ -118,6 +118,7 @@ class GxEPD2_213 : public GxEPD2_EPD
     static const uint8_t LUTDefault_part[];
     static const uint8_t LUTDefault_full[];
     _refresh_status_t _rSf;
+    uint8_t next_frame;
 };
 
 }// namespace 

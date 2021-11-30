@@ -7,7 +7,7 @@ GxEPD2_EPD::GxEPD2_EPD(int16_t busy_level, uint32_t busy_timeout,
                        uint16_t w, uint16_t h, GxEPD2::Panel p, bool c, bool pu, bool fpu) :
   WIDTH(w), HEIGHT(h), panel(p), hasColor(c), hasPartialUpdate(pu), hasFastPartialUpdate(fpu),
   _busy_level(busy_level), _busy_timeout(busy_timeout), _diag_enabled(false),
-  _spi_settings(5000000, MSBFIRST, SPI_MODE0)
+  _spi_settings(4000000, MSBFIRST, SPI_MODE0)
 { 
   _cs = EMW3_EPD_CS_PIN;
   _dc = EMW3_EPD_DC_PIN;
