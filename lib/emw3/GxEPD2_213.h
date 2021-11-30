@@ -99,6 +99,11 @@ class GxEPD2_213 : public GxEPD2_EPD
     
     void powerOff(); // turns off generation of panel driving voltages, avoids screen fading over time
     void hibernate(); // turns powerOff() and sets controller to deep sleep for minimum power use, ONLY if wakeable by RST (rst >= 0)
+    void setLut(bool FullOrPart = 0, const uint8_t *lut = nullptr, uint8_t size = 0);
+    const uint8_t * getLut(bool FullOrPart, uint8_t *size){
+      *size = FullOrPart?LUTpartSize:LUTfullSize;
+      return FullOrPart?LUTDefault_part:LUTDefault_full;
+    }
   private:
     void _writeScreenBuffer(uint8_t value);
     void _setPartialRamArea(uint16_t x, uint16_t y, uint16_t w, uint16_t h);
@@ -115,8 +120,10 @@ class GxEPD2_213 : public GxEPD2_EPD
     void _Update_Full_noDelay();
     void _Update_Part_noDelay();
   private:
-    static const uint8_t LUTDefault_part[];
-    static const uint8_t LUTDefault_full[];
+    static uint8_t LUTDefault_part[40];
+    static uint8_t LUTDefault_full[40];
+    static uint8_t LUTfullSize;
+    static uint8_t LUTpartSize;
     _refresh_status_t _rSf;
     uint8_t next_frame;
 };

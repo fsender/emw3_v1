@@ -34,7 +34,18 @@ void EMW3::rotation(int rot){
   //new 7  old 2
   setRotation(rot);
 }
-/*
-void EMW3::dispWindow(int16_t x,int16_t y,int16_t w,int16_t h){
-  ;
-}*/
+uint8_t EMW3::getBtn(uint8_t btn){
+  /*
+  if(btn==EMW3_BtnL) BtnL_lastpress=1;
+  if(btn==EMW3_BtnM) BtnM_lastpress=1;
+  if(btn==EMW3_BtnR) BtnR_lastpress=1;
+  */
+  pinMode(btn,INPUT_PULLUP);
+  uint8_t readb = digitalRead(btn);
+  if(btn == D6) pinMode(D6,SPECIAL);
+  else {
+    pinMode(btn,OUTPUT);
+    digitalWrite(btn,HIGH);
+  }
+  return readb;
+}

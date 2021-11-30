@@ -48,20 +48,21 @@ void GxEPD2_213 ::endTr(){
 */
 
 IRAM_ATTR void _rSfr_Cal_lBack_(_refresh_status_t *_fb){
+  uint8_t bkup = _fb->driver->_refreshing;
   detachInterrupt(EMW3_EPD_BUSY_PIN);
   SPI.beginTransaction(_fb->driver->_spi_settings);
   _fb->driver->_writeCommand(0xff);
-  if(_fb->driver->_refreshing>=4) {
+  if(bkup>=4) {
     _fb->driver->writeImagePart(_fb->driver->_buffer,0,0,_fb->driver->WIDTH,_fb->driver->HEIGHT,
     _fb->px,_fb->py,_fb->pw,_fb->ph);
     _fb->driver->writeImagePart(_fb->driver->_buffer,0,0,_fb->driver->WIDTH,_fb->driver->HEIGHT,
     _fb->x,_fb->y,_fb->w,_fb->h);
   }
   else _fb->driver->writeImage(_fb->driver->_buffer,0,0,_fb->driver->WIDTH,_fb->driver->HEIGHT);
-  if (2==_fb->driver->_refreshing) _fb->driver->powerOff();
+  if (2==bkup) _fb->driver->powerOff();
   SPI.endTransaction();
   _fb->driver->_refreshing = 0;
-  if(_fb->driver->next_frame ==1) _fb->driver->_display(3);
+  if(_fb->driver->next_frame ==1) _fb->driver->_display(bkup-2);
   else if(_fb->driver->next_frame ==2) _fb->driver->displayWindow(_fb->x,_fb->y,_fb->w,_fb->h,1);
 }
   void GxEPD2_213::_display(uint8_t partial_update_mode ){
@@ -69,6 +70,7 @@ IRAM_ATTR void _rSfr_Cal_lBack_(_refresh_status_t *_fb){
         next_frame = 1;
         return;
       }
+      /*
     if(partial_update_mode&2){
       startTr();
       writeImage(_buffer, 0, 0, WIDTH, _page_height);
@@ -77,14 +79,14 @@ IRAM_ATTR void _rSfr_Cal_lBack_(_refresh_status_t *_fb){
       if (!partial_update_mode&1) powerOff();
       endTr();
     }
-    else {
+    else {*/
       startTr();
       writeImage(_buffer, 0, 0, WIDTH, _page_height);
       refreshNoDelay(partial_update_mode);
       endTr();
       _refreshing = 2 | (partial_update_mode);
       attachInterruptArg(EMW3_EPD_BUSY_PIN,(void(*)(void *))_rSfr_Cal_lBack_,&_rSf,FALLING);
-    }
+    //}
     next_frame = 0;
   }
 
@@ -492,18 +494,31 @@ void GxEPD2_213::_InitDisplay()
   _writeData(0x08);    // 2us per line
   _setPartialRamArea(0, 0, WIDTH, HEIGHT);
 }
-const uint8_t GxEPD2_213::LUTDefault_full[] PROGMEM = { 0x32,  // command
+uint8_t GxEPD2_213::LUTDefault_full[40] = {   // command
   0x22, 0x55, 0xaa, 0x11, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
   0x00, 0x0f, 0x0f, 0x13, 0x13, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
 
-const uint8_t GxEPD2_213::LUTDefault_part[] PROGMEM = { 0x32,  // command
+uint8_t GxEPD2_213::LUTDefault_part[40] = {   // command
   0x18, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
   0x00, 0x0d, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00  };
-
+uint8_t GxEPD2_213:: LUTfullSize = 29;
+uint8_t GxEPD2_213:: LUTpartSize = 29;
+void GxEPD2_213::setLut(bool FullOrPart, const uint8_t *lut, uint8_t size){
+  if(nullptr == lut|| size == 0 || size>40) return;
+  if(FullOrPart){
+    for(int i=0;i<size;i++) LUTDefault_part[i] = lut[i];
+    LUTpartSize = size;
+  }
+  else{
+    for(int i=0;i<size;i++) LUTDefault_full[i] = lut[i];
+    LUTfullSize = size;
+  }
+}
 void GxEPD2_213::_Init_Full()
 {
   _InitDisplay();
-  _writeCommandDataPGM(LUTDefault_full, sizeof(LUTDefault_full));
+  _writeCommand(0x32);
+  _writeDataPGM(LUTDefault_full, LUTfullSize);
   _PowerOn();
   _using_partial_mode = false;
 }
@@ -511,7 +526,8 @@ void GxEPD2_213::_Init_Full()
 void GxEPD2_213::_Init_Part()
 {
   _InitDisplay();
-  _writeCommandDataPGM(LUTDefault_part, sizeof(LUTDefault_part));
+  _writeCommand(0x32);
+  _writeDataPGM(LUTDefault_part, LUTpartSize);
   _PowerOn();
   _using_partial_mode = true;
 }
