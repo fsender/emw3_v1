@@ -27,8 +27,8 @@ class GxEPD2_213 : public GxEPD2_EPD
     void init(bool initial = true, uint16_t reset_duration = 20, bool pulldown_rst_mode = false);
     //void fill(uint16_t color); // 0x0 black, >0x0 white, to buffer
     // display buffer content to screen, useful for full screen buffer
-    void _display(uint8_t partial_update_mode);
-    void displayWindow(uint16_t x, uint16_t y, uint16_t w, uint16_t h, bool async = true);
+    uint8_t _display(uint8_t partial_update_mode);
+    uint8_t displayWindow(uint16_t x, uint16_t y, uint16_t w, uint16_t h, bool async = true);
     void setFullWindow();
     void setPartialWindow(uint16_t x, uint16_t y, uint16_t w, uint16_t h);
     void startTr();

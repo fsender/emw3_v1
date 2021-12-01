@@ -158,7 +158,7 @@ void loop(){
       emw3.fillRect(45,97,30,30,emw3.getBtn(EMW3_BtnM)?EMW3_BLACK:EMW3_WHITE);
       emw3.fillRect(80,97,30,30,emw3.getBtn(EMW3_BtnR)?EMW3_BLACK:EMW3_WHITE);
       emw3.displayWindow(8,96,112,32);
-      yield();
+      delay(1);
     }
   } 
 }

@@ -65,10 +65,10 @@ IRAM_ATTR void _rSfr_Cal_lBack_(_refresh_status_t *_fb){
   if(_fb->driver->next_frame ==1) _fb->driver->_display(bkup-2);
   else if(_fb->driver->next_frame ==2) _fb->driver->displayWindow(_fb->x,_fb->y,_fb->w,_fb->h,1);
 }
-  void GxEPD2_213::_display(uint8_t partial_update_mode ){
+  uint8_t GxEPD2_213::_display(uint8_t partial_update_mode ){
       if(_refreshing){ //上一次刷新还没结束
         next_frame = 1;
-        return;
+        return 1;
       }
       /*
     if(partial_update_mode&2){
@@ -87,17 +87,17 @@ IRAM_ATTR void _rSfr_Cal_lBack_(_refresh_status_t *_fb){
       _refreshing = 2 | (partial_update_mode);
       attachInterruptArg(EMW3_EPD_BUSY_PIN,(void(*)(void *))_rSfr_Cal_lBack_,&_rSf,FALLING);
     //}
-    next_frame = 0;
+    return next_frame = 0;
   }
 
-  void GxEPD2_213::displayWindow(uint16_t x, uint16_t y, uint16_t w, uint16_t h, bool async){
+  uint8_t GxEPD2_213::displayWindow(uint16_t x, uint16_t y, uint16_t w, uint16_t h, bool async){
       if(_refreshing){ //上一次刷新还没结束
         next_frame = 2;
         _rSf.x = x;
         _rSf.y = y;
         _rSf.w = w;
         _rSf.h = h;
-        return;
+        return 1;
       }
       x = gx_uint16_min(x, EMW3_WIDTH);
       y = gx_uint16_min(y, EMW3_HEIGHT);
@@ -124,7 +124,8 @@ IRAM_ATTR void _rSfr_Cal_lBack_(_refresh_status_t *_fb){
       writeImagePart(_buffer, x, y_part, WIDTH, _page_height, x, y, w, h);
       endTr();
     }
-    next_frame = 0;
+    
+    return next_frame = 0;
   }
     void GxEPD2_213::setFullWindow(){
       _using_partial_mode = false;
@@ -464,7 +465,7 @@ void GxEPD2_213::_PowerOff()
   _writeData(0xc3);
   _writeCommand(0x20);
   //_waitWhileBusy("_PowerOff", 0);
-  //while(digitalRead(EMW3_EPD_BUSY_PIN) == _busy_level) yield();
+  while(digitalRead(EMW3_EPD_BUSY_PIN) == _busy_level) ESP.wdtFeed();
   _power_is_on = false;
   _using_partial_mode = false;
 }

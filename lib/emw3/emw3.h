@@ -17,10 +17,11 @@ class EMW3 : public GxEPD2_213, public LGFX_Sprite {
      * @brief 刷屏
      * @param part 0:无延时全刷    1:无延时快刷     2: 阻塞式全刷     3: 阻塞式快刷
      */
-    inline void display(uint8_t part = 1) { 
-      _display(part&1); 
+    inline uint8_t display(uint8_t part = 1) { 
+      uint8_t res = _display(part&1); 
       if(part>=2) 
         while(digitalRead(EMW3_EPD_BUSY_PIN)==HIGH) ESP.wdtFeed();
+      return res;
     }
     void rotation(int rot);
     // void dispWindow(int16_t x,int16_t y,int16_t w,int16_t h);
