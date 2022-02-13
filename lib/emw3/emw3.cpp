@@ -3,18 +3,19 @@
 #include <FS.h>
 #include <SD.h>
 #include "emw3_defines.h"
-#include "GxEPD2_213.h"
+#include "eddrv_2.h"
 //using namespace emw3epd;
-using namespace emw3_gxepd2;
+using namespace emw3_EinkDriver;
 
 unsigned char EMW3::buff [4000] = {};
 EMW3::EMW3(){
   setColorDepth(1);
-  setBuffer(static_cast<uint8_t*>(buff),EMW3_REAL_WIDTH,EMW3_HEIGHT,1);
-  setPaletteColor(0,GxEPD_BLACK);
-  setPaletteColor(1,GxEPD_WHITE);
+  setBuffer(static_cast<uint8_t *>(buff),EMW3_REAL_WIDTH,EMW3_HEIGHT,1);
+  createPalette();
+  //setPaletteColor(0,EMW3_BLACK);
+  //setPaletteColor(1,EMW3_WHITE);
   setRotation(7); // real val:0
-  //createSprite(EPD_WIDTH,EPD_HEIGHT);
+  //_buffer = (uint8_t *)createSprite(EMW3_REAL_WIDTH,EMW3_HEIGHT);
   _buffer = buff;
   ESP.wdtEnable(1000);
 }
@@ -42,10 +43,10 @@ uint8_t EMW3::getBtn(uint8_t btn){
   */
   pinMode(btn,INPUT_PULLUP);
   uint8_t readb = digitalRead(btn);
-  if(btn == D6) pinMode(D6,SPECIAL);
+  if(btn == D6) pinMode(D6,SPECIAL); //针对MISO引脚进行专门的优化
   else {
     pinMode(btn,OUTPUT);
-    digitalWrite(btn,HIGH);
+    digitalWrite(btn,HIGH);    //这些引脚的默认电平都是高电平
   }
   return readb;
 }

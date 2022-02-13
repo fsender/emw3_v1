@@ -1,14 +1,14 @@
-#ifndef _GxEPD2_213_H_
-#define _GxEPD2_213_H_
+#ifndef _EinkDrv_213_H_
+#define _EinkDrv_213_H_
 #include <Arduino.h>
 #include <SPI.h>
-#include "GxEPD2_EPD.h"
+#include "eddrv_1.h"
 #include "emw3_defines.h"
-namespace emw3_gxepd2{
+namespace emw3_EinkDriver{
   
-class GxEPD2_213;
+class EinkDrv_213;
 typedef struct {
-  GxEPD2_213 *driver;
+  EinkDrv_213 *driver;
   int16_t x;
   int16_t y;
   int16_t w;
@@ -20,10 +20,9 @@ typedef struct {
   //int16_t update_mode; // -1 无刷新  0 全刷  1 局刷  2 窗口局刷
 } _refresh_status_t;
 
-class GxEPD2_213 : public GxEPD2_EPD
-{
+class EinkDrv_213 : public EinkDriver{
   public:
-    GxEPD2_213();
+    EinkDrv_213();
     void init(bool initial = true, uint16_t reset_duration = 20, bool pulldown_rst_mode = false);
     //void fill(uint16_t color); // 0x0 black, >0x0 white, to buffer
     // display buffer content to screen, useful for full screen buffer
@@ -35,39 +34,37 @@ class GxEPD2_213 : public GxEPD2_EPD
     void endTr();
     friend IRAM_ATTR void _rSfr_Cal_lBack_(_refresh_status_t *);
   private:
-    template <typename T> static inline void
-    _swap_(T & a, T & b)
-    {
+    template <class T> static inline void _swap_(T & a, T & b) {
       T t = a;
       a = b;
       b = t;
     };
-    static inline uint16_t gx_uint16_min(uint16_t a, uint16_t b)
-    {
+    /*
+    static inline uint16_t emw3_u16min(uint16_t a, uint16_t b) {
       return (a < b ? a : b);
     };
-    static inline uint16_t gx_uint16_max(uint16_t a, uint16_t b)
-    {
+    static inline uint16_t emw3_u16max(uint16_t a, uint16_t b) {
       return (a > b ? a : b);
     };
-    
+    */
   private:
     bool _using_partial_mode, _second_phase, _mirror, _reverse;
-    uint16_t _width_bytes, _pixel_bytes;
-    int16_t _current_page;
-    uint16_t _pages, _page_height;
+    uint16_t _width_bytes; 
+    uint16_t _pixel_bytes;
+    int16_t  _current_page;
+    uint16_t _pages;
+    uint16_t _page_height;
     uint16_t _pw_x, _pw_y, _pw_w, _pw_h;
   protected:
     uint8_t *_buffer;
     
-    /// @brief 来自GxEPD2_213.h
+    /// @brief 来自EinkDrv_213.h
   public:
     static const uint16_t WIDTH = EMW3_WIDTH;
     static const uint16_t HEIGHT = EMW3_HEIGHT;
-    static const GxEPD2::Panel panel = GxEPD2::GDE0213B1;
-    static const bool hasColor = false;
-    static const bool hasPartialUpdate = true;
-    static const bool hasFastPartialUpdate = true;
+    static const bool _EinkDrv_Has_Colors = false;
+    static const bool _EinkDrv_Has_Part_Show = true;
+    static const bool _EinkDrv_Has_Part_Show_Fast = true;
     // constructor
 
     // methods (virtual)
@@ -101,29 +98,29 @@ class GxEPD2_213 : public GxEPD2_EPD
     void hibernate(); // turns powerOff() and sets controller to deep sleep for minimum power use, ONLY if wakeable by RST (rst >= 0)
     void setLut(bool FullOrPart = 0, const uint8_t *lut = nullptr, uint8_t size = 0);
     const uint8_t * getLut(bool FullOrPart, uint8_t *size){
-      *size = FullOrPart?LUTpartSize:LUTfullSize;
-      return FullOrPart?LUTDefault_part:LUTDefault_full;
+      *size = FullOrPart?_ed_lut_part_size:_ed_lut_full_size;
+      return FullOrPart?_ed_lut_part:_ed_lut_full;
     }
   private:
-    void _writeScreenBuffer(uint8_t value);
-    void _setPartialRamArea(uint16_t x, uint16_t y, uint16_t w, uint16_t h);
-    void _setRamEntryWindow(uint16_t x, uint16_t y, uint16_t w, uint16_t h);
-    void _setRamArea(uint16_t xs, uint16_t xe, uint16_t ys, uint16_t ye);
-    void _setRamPointer(uint16_t x, uint16_t y);
-    void _PowerOn();
-    void _PowerOff();
-    void _InitDisplay();
-    void _Init_Full();
-    void _Init_Part();
-    void _Update_Full();
-    void _Update_Part();
-    void _Update_Full_noDelay();
-    void _Update_Part_noDelay();
+    void _edbuff_w(uint8_t value);
+    void _edpart_area(uint16_t x, uint16_t y, uint16_t w, uint16_t h);
+    void _edentry_nouse(uint16_t x, uint16_t y, uint16_t w, uint16_t h);
+    void _edset_area(uint16_t xs, uint16_t xe, uint16_t ys, uint16_t ye);
+    void _edset_ptr(uint16_t x, uint16_t y);
+    void _edpwr_begin();
+    void _edpwr_end();
+    void _edbegin();
+    void _ed_fullscr_begin();
+    void _ed_partscr_begin();
+    void _ed_fullscr_disp();
+    void _ed_partscr_disp();
+    void _ed_fullscr_disp_noDelay();
+    void _ed_partscr_disp_noDelay();
   private:
-    static uint8_t LUTDefault_part[40];
-    static uint8_t LUTDefault_full[40];
-    static uint8_t LUTfullSize;
-    static uint8_t LUTpartSize;
+    static uint8_t _ed_lut_part[40];
+    static uint8_t _ed_lut_full[40];
+    static uint8_t _ed_lut_full_size;
+    static uint8_t _ed_lut_part_size;
     _refresh_status_t _rSf;
     uint8_t next_frame;
 };

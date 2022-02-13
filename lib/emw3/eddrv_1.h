@@ -1,27 +1,22 @@
-#ifndef _GxEPD2_EPD_H_
-#define _GxEPD2_EPD_H_
+#ifndef _EinkDriver_H_
+#define _EinkDriver_H_
 
 #include <Arduino.h>
 #include <SPI.h>
-
-#include <GxEPD2.h>
-
 #pragma GCC diagnostic ignored "-Wunused-parameter"
 
-namespace emw3_gxepd2{
-class GxEPD2_EPD
-{
+namespace emw3_EinkDriver{
+class EinkDriver{
   public:
     // attributes
     const uint16_t WIDTH;
     const uint16_t HEIGHT;
-    const GxEPD2::Panel panel;
-    const bool hasColor;
-    const bool hasPartialUpdate;
-    const bool hasFastPartialUpdate;
+    const bool _EinkDrv_Has_Colors;
+    const bool _EinkDrv_Has_Part_Show;
+    const bool _EinkDrv_Has_Part_Show_Fast;
     // constructor
-    GxEPD2_EPD(int16_t busy_level, uint32_t busy_timeout,
-               uint16_t w, uint16_t h, GxEPD2::Panel p, bool c, bool pu, bool fpu);
+    EinkDriver(int16_t busy_level, uint32_t busy_timeout,
+               uint16_t w, uint16_t h, bool c, bool pu, bool fpu);
     virtual void init(bool initial, uint16_t reset_duration = 20, bool pulldown_rst_mode = false);
     //  Support for Bitmaps (Sprites) to Controller Buffer and to Screen
     //virtual void clearScreen(uint8_t value) = 0; // init controller memory and screen (default white)
@@ -74,7 +69,7 @@ class GxEPD2_EPD
     virtual void refresh(int16_t x, int16_t y, int16_t w, int16_t h) = 0; // screen refresh from controller memory, partial screen
     virtual void powerOff() = 0; // turns off generation of panel driving voltages, avoids screen fading over time
     virtual void hibernate() = 0; // turns powerOff() and sets controller to deep sleep for minimum power use, ONLY if wakeable by RST (rst >= 0)
-    virtual void setPaged() {}; // for GxEPD2_154c paged workaround
+    virtual void setPaged() {}; // for EinkDrv_154c paged workaround
     
   protected:
     void _reset();
@@ -86,9 +81,6 @@ class GxEPD2_EPD
     void _writeDataPGM_sCS(const uint8_t* data, uint16_t n, int16_t fill_with_zeroes = 0);
     void _writeCommandData(const uint8_t* pCommandData, uint8_t datalen);
     void _writeCommandDataPGM(const uint8_t* pCommandData, uint8_t datalen);
-    void _startTransfer();
-    void _transfer(uint8_t value);
-    void _endTransfer();
   protected:
     int16_t _cs, _dc, _rst, _busy, _busy_level;
     uint32_t _busy_timeout;

@@ -8,32 +8,37 @@
  */
 #ifndef _CTG_EMW3_DEFINES_H
 #define _CTG_EMW3_DEFINES_H
+#include <Arduino.h>
+//#define DEBUG_DISPLAY_SERIAL //使用串口控制台调试显示部分,取代墨水屏显示.
+// * 需要搭配特定的字体和较高的串口波特率使用,如921600
+
 #define _BOARD_RELEASE
 
 #ifdef _BOARD_RELEASE
 //最新的硬件
-#define EMW3_SD_CS_PIN 0
-#define EMW3_EPD_CS_PIN 15
-#define EMW3_EPD_DC_PIN 5
-#define EMW3_EPD_RST_PIN -1
-#define EMW3_EPD_BUSY_PIN 4
+#define EMW3_SD_CS_PIN 0 //D3
+#define EMW3_EPD_CS_PIN 15 //D8
+#define EMW3_EPD_DC_PIN 5 //D1
+#define EMW3_EPD_RST_PIN -1 //reserved
+#define EMW3_EPD_BUSY_PIN 4 //D2
 #define EMW3_BtnL 5
 #define EMW3_BtnM 12
-#define EMW3_BtnR 2
+#define EMW3_BtnR 2 //D4
 
 #define HARDWARE_NEED_SD_END 0
 #define REMIND_LED_PIN LED_BUILTIN
 
 #elif defined(_BOARD_PRE_RELEASE_NO_USB)
-//在拿到pcb之前的硬件
-#define EMW3_SD_CS_PIN 0
+//在拿到pcb之前的硬件, 尽管不能连接SD卡, 
+//但是必须要能使用 load from SD 功能
+#define EMW3_SD_CS_PIN 2
 #define EMW3_EPD_CS_PIN 15
-#define EMW3_EPD_DC_PIN 5
-#define EMW3_EPD_RST_PIN -1
+#define EMW3_EPD_DC_PIN 0
+#define EMW3_EPD_RST_PIN 2 // real: 2
 #define EMW3_EPD_BUSY_PIN 4
 #define EMW3_BtnL 5
-#define EMW3_BtnM 12
-#define EMW3_BtnR 2
+#define EMW3_BtnM D9 //RX
+#define EMW3_BtnR D10 //TX  
 #define _HARDWARE_NEED_SD_END 0
 #define _REMIND_LED_PIN LED_BUILTIN
 

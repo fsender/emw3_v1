@@ -8,13 +8,14 @@
         {
             "name": "PlatformIO",
             "includePath": [
-                "D:/项目/platformio_prj/esp8266prjs/emw3_v1/include",
-                "D:/项目/platformio_prj/esp8266prjs/emw3_v1/src",
-                "D:/项目/platformio_prj/esp8266prjs/emw3_v1/lib/emw3",
+                "d:/项目/platformio_prj/esp8266prjs/emw3_v1/include",
+                "d:/项目/platformio_prj/esp8266prjs/emw3_v1/src",
+                "d:/项目/platformio_prj/esp8266prjs/emw3_v1/lib/listMenuV2",
+                "d:/项目/platformio_prj/esp8266prjs/emw3_v1/lib/emw3",
                 "C:/Users/1/.platformio/packages/framework-arduinoespressif8266/libraries/SD/src",
                 "C:/Users/1/.platformio/packages/framework-arduinoespressif8266/libraries/SDFS/src",
                 "C:/Users/1/.platformio/packages/framework-arduinoespressif8266/libraries/ESP8266SdFat/src",
-                "D:/项目/platformio_prj/esp8266prjs/emw3_v1/lib/LovyanGFX/src",
+                "d:/项目/platformio_prj/esp8266prjs/emw3_v1/lib/LovyanGFX/src",
                 "C:/Users/1/.platformio/packages/framework-arduinoespressif8266/libraries/Wire",
                 "C:/Users/1/.platformio/packages/framework-arduinoespressif8266/libraries/SPI",
                 "C:/Users/1/.platformio/packages/framework-arduinoespressif8266/tools/sdk/include",
@@ -58,13 +59,14 @@
             "browse": {
                 "limitSymbolsToIncludedHeaders": true,
                 "path": [
-                    "D:/项目/platformio_prj/esp8266prjs/emw3_v1/include",
-                    "D:/项目/platformio_prj/esp8266prjs/emw3_v1/src",
-                    "D:/项目/platformio_prj/esp8266prjs/emw3_v1/lib/emw3",
+                    "d:/项目/platformio_prj/esp8266prjs/emw3_v1/include",
+                    "d:/项目/platformio_prj/esp8266prjs/emw3_v1/src",
+                    "d:/项目/platformio_prj/esp8266prjs/emw3_v1/lib/listMenuV2",
+                    "d:/项目/platformio_prj/esp8266prjs/emw3_v1/lib/emw3",
                     "C:/Users/1/.platformio/packages/framework-arduinoespressif8266/libraries/SD/src",
                     "C:/Users/1/.platformio/packages/framework-arduinoespressif8266/libraries/SDFS/src",
                     "C:/Users/1/.platformio/packages/framework-arduinoespressif8266/libraries/ESP8266SdFat/src",
-                    "D:/项目/platformio_prj/esp8266prjs/emw3_v1/lib/LovyanGFX/src",
+                    "d:/项目/platformio_prj/esp8266prjs/emw3_v1/lib/LovyanGFX/src",
                     "C:/Users/1/.platformio/packages/framework-arduinoespressif8266/libraries/Wire",
                     "C:/Users/1/.platformio/packages/framework-arduinoespressif8266/libraries/SPI",
                     "C:/Users/1/.platformio/packages/framework-arduinoespressif8266/tools/sdk/include",
@@ -107,7 +109,7 @@
                 ]
             },
             "defines": [
-                "PLATFORMIO=50203",
+                "PLATFORMIO=50205",
                 "ESP8266",
                 "ARDUINO_ARCH_ESP8266",
                 "ARDUINO_ESP8266_NODEMCU_ESP12E",

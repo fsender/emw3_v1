@@ -1,0 +1,32 @@
+dlg 100 50
+1 0 0 txt 0 Hello World!
+2 0 0 lbl 0 0 0 0 Hello World!
+3 0 20 btn 40 20 Button
+4 50 20 swh 40 20 1
+5 50 20 inp 40 20 1 str
+5 50 20 sld 40 20 1 int
+3 end
+
+------------说明------------
+控件 
+dlg 对话框文件头 后面是对话框的长和宽
+后面每个控件都是 编号 控件位置 控件名 参数
+编号为0的控件不可以被选中
+任何时候长按确定返回0
+
+txt 显示文本
+参数 1 显示位置, 详见枚举: text_datum
+参数 2 文本
+
+txb 以文本显示参数
+参数 1 显示位置, 详见枚举: text_datum
+参数 2 参数类型
+int 整数 int
+in8 整数 uint8_t
+uin 整数 unsigned int
+flo 浮点数 float
+dbl 浮点数 double
+chr 字符 char
+boo 布尔 bool
+stg 字符串 const char *
+参数 3 参数编号
