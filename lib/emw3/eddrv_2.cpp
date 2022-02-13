@@ -9,6 +9,7 @@
  * Update: 2021-11-27
  * 初次创建
  */
+#include "eddrv_2.h"
 #include "emw3_defines.h"
 namespace emw3_EinkDriver{
 
