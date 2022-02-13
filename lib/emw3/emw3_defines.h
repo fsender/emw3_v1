@@ -3,8 +3,12 @@
  * @author fsender (f_ender@163.com)
  * @brief provide emw3 brick pin definations.
  * 
- * @version 1.0.0 pre-release
- * @date 2021-11-27
+ * @version 1.0.1 pre-release
+ * update: 2022-2-13
+ * 新增: 串口模拟显示, 在电脑的串口助手上也能显示画面, 不会缩短屏幕寿命
+ * 修改 DEBUG_DISPLAY_SERIAL即可
+ * update: 2021-11-27
+ * 初次创建
  */
 #ifndef _CTG_EMW3_DEFINES_H
 #define _CTG_EMW3_DEFINES_H

@@ -1,3 +1,12 @@
+/**
+ * @file listMenuV2.cpp
+ * @author fsender (Bilibili FriendshipEnder)
+ * @brief 菜单显示程序,可以提供一个功能丰富的菜单功能,仅使用于EMW3
+ * 将来会加入键盘,对话框,滑动条等更多功能
+ * @version 1.2
+ * @date 2022-02-13
+ * 
+ */
 #include "listMenuV2.h"
 
 listMenuV2::listMenuV2(EMW3 *intft, const char **text, void **interaction) : in_tft(intft) {

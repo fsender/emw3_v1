@@ -1,3 +1,11 @@
+/**
+ * @file eddrv_1.h
+ * @author fsender
+ * @brief 
+ * @version 1.0
+ * Update: 2021-11-27
+ * 初次创建
+ */
 #ifndef _EinkDriver_H_
 #define _EinkDriver_H_
 

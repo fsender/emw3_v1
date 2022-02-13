@@ -1,9 +1,22 @@
 /**
  * @file listMenuV2.h
- * @author FriendshipEnder (Q:3253342798)
+ * @author fsender (Bilibili FriendshipEnder) (Q:3253342798)
  * @brief 菜单显示程序,可以提供一个功能丰富的菜单功能,仅使用于EMW3
- * @version beta 1.0
- * @date 2022-02-03
+ * @version beta 1.2
+ * 
+ * 即将更新
+ * 浮动键盘
+ * 窗口,对话框,滑动条
+ * 增加菜单快速度跳转(同时按住左右键触发滑动条)
+ * 
+ * update 2022-02-14
+ * 增加图标数据缓存,减少读写SD卡的次数
+ * 增加动态lut, 来实现加速滑动(原来需要 ~350ms, 目标 ~200ms)
+ * 
+ * update 2022-02-13
+ * 修复了SD卡与刷屏互相干扰导致屏幕或者SD卡死机问题
+ * update 2022-02-03
+ * 初次创建
  * @copyright Copyright (c) 2022 
  */
 #ifndef _LISTMENU_V2_H

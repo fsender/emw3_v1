@@ -1,3 +1,15 @@
+/**
+ * @file emw3.cpp
+ * @author fsender
+ * @brief 
+ * @version 1.0.4
+ * Update: 2022-02-13
+ * 修复了SD卡图片不能直接显示,必须间接显示的bug
+ * 原因: 未创建 palette, 未在初始化时调用 createPalette 函数
+ * 
+ * Update: 2021-11-27
+ * 初次创建
+ */
 #include "emw3.h"
 #include <SPI.h>
 #include <FS.h>

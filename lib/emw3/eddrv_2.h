@@ -1,3 +1,12 @@
+/**
+ * @file eddrv_2.h
+ * @author fsender
+ * @brief 
+ * @version 1.0
+ * 
+ * Update: 2021-11-27
+ * 初次创建
+ */
 #ifndef _EinkDrv_213_H_
 #define _EinkDrv_213_H_
 #include <Arduino.h>

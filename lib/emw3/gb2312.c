@@ -1,4 +1,7 @@
-/*
+/**
+ * @file gb2312.c
+ * @brief Chinese characters bitmap library
+ * 
   Fontname: -wenquanyi-wenquanyi bitmap song-medium-r-normal--14-140-75-75-P-80-iso10646-1
   Copyright: (null)
   Glyphs: 6873/22852

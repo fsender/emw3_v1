@@ -1,3 +1,19 @@
+/**
+ * @file emw3.h
+ * @author fsender
+ * @brief 
+ * @version 1.0.4
+ * Update: 2022-02-13
+ * 修复了SD卡与刷屏互相干扰导致屏幕或者SD卡死机问题
+ * 由"中断刷屏"导致, 现已修复, 在系统函数中仅使用阻塞刷屏
+ * 
+ * Update: 2022-02-09
+ * 新增: 串口模拟显示, 在电脑的串口助手上也能显示画面, 不会缩短屏幕寿命
+ * 发现问题: SD卡与刷屏互相干扰导致屏幕或者SD卡死机
+ * 
+ * Update: 2021-11-27
+ * 初次创建
+ */
 #ifndef _CTG_EMW3_V1_H
 #define _CTG_EMW3_V1_H
 
@@ -52,12 +68,12 @@ class EMW3 : public EinkDrv_213, public LGFX_Sprite {
       return 0;
       
 #else
-      uint32_t tm = micros();
+      //uint32_t tm = micros();
       uint8_t res = _display(part&1); 
       if(part>=2) 
         while(digitalRead(EMW3_EPD_BUSY_PIN)==HIGH) ESP.wdtFeed();
-      Serial.print(F("TIME COST (US): "));
-      Serial.println(micros() - tm);
+      //Serial.print(F("TIME COST (US): "));
+      //Serial.println(micros() - tm);
       return res;
 #endif
     }

@@ -1,3 +1,11 @@
+/**
+ * @file eddrv_1.cpp
+ * @author fsender
+ * @brief 
+ * @version 1.0
+ * Update: 2021-11-27
+ * 初次创建
+ */
 #include "eddrv_1.h"
 #include "emw3_defines.h"
 #include <pgmspace.h>

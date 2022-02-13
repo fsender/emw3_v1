@@ -1,4 +1,14 @@
-#include "eddrv_2.h"
+/**
+ * @file eddrv_2.cpp
+ * @author fsender
+ * @brief 
+ * @version 1.0
+ * 2022-02-13
+ * 优化了lut
+ * 
+ * Update: 2021-11-27
+ * 初次创建
+ */
 #include "emw3_defines.h"
 namespace emw3_EinkDriver{
 
