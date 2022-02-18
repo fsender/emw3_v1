@@ -3,6 +3,9 @@
  * @author fsender
  * @brief 
  * @version 1.0
+ * 
+ * Update: 2022-2-14
+ * 增加 setLut 函数: 允许单独修改某一个Lut数据,而不只是以数组为参数一次修改全部数据
  * 2022-02-13
  * 优化了lut
  * 
@@ -485,7 +488,7 @@ uint8_t EinkDrv_213::_ed_lut_full[40] = {   // command
 
 uint8_t EinkDrv_213::_ed_lut_part[40] = {   // command
   0x18, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-  0x00, 0x0d, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00  };
+  0x00, 0x0e, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00  };
 uint8_t EinkDrv_213:: _ed_lut_full_size = 29;
 uint8_t EinkDrv_213:: _ed_lut_part_size = 29;
 void EinkDrv_213::setLut(bool FullOrPart, const uint8_t *lut, uint8_t size){
@@ -498,6 +501,16 @@ void EinkDrv_213::setLut(bool FullOrPart, const uint8_t *lut, uint8_t size){
     for(int i=0;i<size;i++) _ed_lut_full[i] = lut[i];
     _ed_lut_full_size = size;
   }
+  _using_partial_mode = false; //使能更新lut数据
+}
+void EinkDrv_213::setLut(bool FullOrPart , uint8_t lut , uint8_t position){
+  if(FullOrPart){
+    if(position<_ed_lut_part_size && _ed_lut_part[position]!=lut) {
+      _ed_lut_part[position]=lut;
+      _using_partial_mode = false; //使能更新lut数据
+    }
+  }
+  else if(position<_ed_lut_full_size) _ed_lut_full[position]=lut;
 }
 void EinkDrv_213::_ed_fullscr_begin(){
   _edbegin();

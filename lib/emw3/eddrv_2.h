@@ -4,6 +4,8 @@
  * @brief 
  * @version 1.0
  * 
+ * Update: 2022-2-14
+ * 增加 setLut 函数: 允许单独修改某一个Lut数据,而不只是以数组为参数一次修改全部数据
  * Update: 2021-11-27
  * 初次创建
  */
@@ -106,6 +108,7 @@ class EinkDrv_213 : public EinkDriver{
     void powerOff(); // turns off generation of panel driving voltages, avoids screen fading over time
     void hibernate(); // turns powerOff() and sets controller to deep sleep for minimum power use, ONLY if wakeable by RST (rst >= 0)
     void setLut(bool FullOrPart = 0, const uint8_t *lut = nullptr, uint8_t size = 0);
+    void setLut(bool FullOrPart, uint8_t lut, uint8_t position = 0);
     const uint8_t * getLut(bool FullOrPart, uint8_t *size){
       *size = FullOrPart?_ed_lut_part_size:_ed_lut_full_size;
       return FullOrPart?_ed_lut_part:_ed_lut_full;
