@@ -3,6 +3,9 @@
  * @author fsender
  * @brief 
  * @version 1.0.4
+ * Update: 2022-02-15
+ * 修复在当 hlines < 3 的时候指示条显示错位的问题
+ * 
  * Update: 2022-02-13
  * 修复了SD卡与刷屏互相干扰导致屏幕或者SD卡死机问题
  * 由"中断刷屏"导致, 现已修复, 在系统函数中仅使用阻塞刷屏
@@ -68,12 +71,13 @@ class EMW3 : public EinkDrv_213, public LGFX_Sprite {
       return 0;
       
 #else
-      //uint32_t tm = micros();
+      uint32_t tm = micros();
       uint8_t res = _display(part&1); 
       if(part>=2) 
         while(digitalRead(EMW3_EPD_BUSY_PIN)==HIGH) ESP.wdtFeed();
-      //Serial.print(F("TIME COST (US): "));
-      //Serial.println(micros() - tm);
+      Serial.print(F("TIME COST (US): "));
+      Serial.println(micros() - tm);
+      Serial.print('\n');
       return res;
 #endif
     }

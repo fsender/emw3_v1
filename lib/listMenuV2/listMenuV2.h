@@ -8,10 +8,10 @@
  * 浮动键盘
  * 窗口,对话框,滑动条
  * 增加菜单快速度跳转(同时按住左右键触发滑动条)
- * 
  * update 2022-02-14
  * 增加图标数据缓存,减少读写SD卡的次数
  * 增加动态lut, 来实现加速滑动(原来需要 ~350ms, 目标 ~200ms)
+ * 记得在listMenuV2.cpp的第269行修改刷新需要的时间(根据lut数据动态修整)
  * 
  * update 2022-02-13
  * 修复了SD卡与刷屏互相干扰导致屏幕或者SD卡死机问题
@@ -270,6 +270,11 @@ private:
 #ifdef LMV2_USE_SD_BMP_SUPPORT
   uint16_t useGlobalSDIcon=0;
   const char** globalSDIcon = nullptr;
+  //SD卡图标缓存数据,此部分将会常驻内存, 所以不用的listMenuV2对象需要析构.
+  //常驻内存需要580字节.
+  const char* iconDataCacheLabel[16]={nullptr}; //字典索引
+  uint8_t iconDataCache[16][32]; //默认缓存最近使用的16个图标,占用内存为512字节,未被缓存的图标数据将以常规方式绘制.
+  uint32_t cacheUsage=0; //缓存使用情况
 #endif
 #ifdef LMV2_USE_SD_TXT_SUPPORT
   fs::File txtf;

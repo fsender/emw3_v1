@@ -43,6 +43,7 @@ uint16_t listMenuV2::listMenu(int16_t x,int16_t y,uint8_t hlines,int16_t numitem
   int16_t cursor2 = 0; //当光标在最上面时,正好选择的是第一个选项,则此数值为0
   //hlines |= 1;
   int16_t h = height_max*hlines+title_height_max;
+  uint8_t flipCombo = 0;  //新增自适应刷新速度功能,速度不同将使用不同的lut
   /* uint8_t enable_pgm = 0;
   if(settings&8) enable_pgm = 8;      //SD卡
   else if(settings&1) enable_pgm = 1; //pgm
@@ -145,6 +146,7 @@ uint16_t listMenuV2::listMenu(int16_t x,int16_t y,uint8_t hlines,int16_t numitem
           else cursor2--;
         }
         refreshFlag=0;
+        if(flipCombo<0x0b) flipCombo++;  //新增自适应刷新速度功能
       }
       else if(!in_tft->getBtn(EMW3_BtnR)){
         if(selected >= numitem) {
@@ -162,6 +164,7 @@ uint16_t listMenuV2::listMenu(int16_t x,int16_t y,uint8_t hlines,int16_t numitem
           else cursor2++;
         }
         refreshFlag=0;
+        if(flipCombo<0x0b) flipCombo++;  //新增自适应刷新速度功能
       }
     }
     while(in_tft->getBtn(EMW3_BtnM)==0) {
@@ -257,17 +260,19 @@ uint16_t listMenuV2::listMenu(int16_t x,int16_t y,uint8_t hlines,int16_t numitem
         case 2:  themeRect(themeNormal, x,y+height_max*(cursor-2)+title_height_max,width_max,height_max,0xffff); break;
         default: listMenuGUI(x,y,width_max,hlines,settings,disp,intera,disp_icon);
         if(settings&4){
-          int barLength = hlines*(height_max*hlines+title_height_max-4)/(numitem+2);
+          int barLength = hlines*(height_max*hlines+title_height_max-4)/(numitem+(hlines<3?0:2));
           if(barLength<1) barLength=1;
-          int barwhere = cursor2*(height_max*hlines+title_height_max-4-barLength)/(numitem+2-hlines);
+          int barwhere = cursor2*(height_max*hlines+title_height_max-4-barLength)/(numitem+(hlines<3?0:2)-hlines);
           in_tft->fillRect(x+width_max+2,y+1,(settings&16)?2:6,height_max*hlines+title_height_max-2,0xffff);
-          if(numitem+2>hlines) in_tft->fillRect(x+width_max+((settings&16)?2:3),y+2+barwhere,
+          if(numitem+(hlines<3?0:2)>hlines) in_tft->fillRect(x+width_max+((settings&16)?2:3),y+2+barwhere,
             (settings&16)?2:4,barLength,0x0);
         }
       }
       themeRect(themeNormal, x,y+height_max*(cursor-1)+title_height_max,width_max,height_max,0);
-      refreshFlag = pressMillis+250;
+      refreshFlag = pressMillis+(0x0e - flipCombo)*18; //此处以接近屏幕刷新时间为宜,
       //while(in_tft->epdBusy()) yield();
+      in_tft->setLut(true,0x0e - flipCombo,16);
+      Serial.println(0x0e - flipCombo);
       in_tft->display(3);
       cursor_changed=0;
       if(initial){
@@ -275,6 +280,7 @@ uint16_t listMenuV2::listMenu(int16_t x,int16_t y,uint8_t hlines,int16_t numitem
         initial=0;
       }
     }
+    if(in_tft->getBtn(EMW3_BtnL) && in_tft->getBtn(EMW3_BtnR)) flipCombo=0;  //新增自适应刷新速度功能
     yield();
   }
   if(long_pressed==2) selected = 0;
@@ -315,14 +321,7 @@ void listMenuV2::listMenuGUI(int16_t x,int16_t y, int16_t w, uint8_t hlines,uint
           }
 #ifdef LMV2_USE_SD_BMP_SUPPORT
           else if(useGlobalSDIcon) {
-            //Serial.print("DRAWING FILE:  ");
-            //Serial.println(bmpsrc[0]);
-            in_tft->drawBmpFile(SDFS,bmpsrc[0],x+spr_offset_x,y+spr_offset_y);
-            //printspr.drawBmpFile(SDFS,bmpsrc[0],0,0);     //未实现之前的方案
-            //LGFX_Sprite bmp_in_spr(in_tft);               //旧版解决方案
-            //bmp_in_spr.createFromBmpFile(SDFS,bmpsrc[0]);
-            //bmp_in_spr.pushSprite(x+spr_offset_x,y+spr_offset_y);
-            //Serial.println("DRAWING FILE DONE.\n");
+            in_tft->drawBmpFile(SDFS,bmpsrc[0],x+spr_offset_x,y+spr_offset_y); //绘制标题图标
             leftSpace = 1;
           }
 #endif
@@ -365,26 +364,40 @@ void listMenuV2::listMenuGUI(int16_t x,int16_t y, int16_t w, uint8_t hlines,uint
       }
       else {
 //-----------绘制图标-----------此部分有bug--------------
+        int16_t drx=x+spr_offset_x, dry=y+(i-1)*height_max+title_height_max+spr_offset_y;
         leftSpace = 0; //重置 leftSpace (有无图标空位);
         if(bmpsrc[i]!=nullptr){
           if(useGlobalIcon>i) {
-            in_tft->drawBitmap(x+spr_offset_x,
-            y+(i-1)*height_max+title_height_max+spr_offset_y,(const unsigned char *)bmpsrc[i],16,16,0);
+            in_tft->drawBitmap(drx,dry,(const unsigned char *)bmpsrc[i],16,16,0);
             leftSpace=1;
           }
 #ifdef LMV2_USE_SD_BMP_SUPPORT
-          //else if(useGlobalSDIcon>i) in_tft->drawBmpFile(SDFS,bmpsrc[i],
-          //x+spr_offset_x,y+(i-1)*height_max+title_height_max+spr_offset_y);
-          else if(useGlobalSDIcon>i) {
-            //Serial.print("DRAWING FILE:  ");
-            //Serial.println(bmpsrc[i]);
-
-            in_tft->drawBmpFile(SDFS,bmpsrc[i],x+spr_offset_x,y+(i-1)*height_max+title_height_max+spr_offset_y);
-            //LGFX_Sprite bmp_in_spr(in_tft);
-            //bmp_in_spr.createFromBmpFile(SDFS,bmpsrc[i]);
-            //bmp_in_spr.pushSprite(x+spr_offset_x,y+(i-1)*height_max+title_height_max+spr_offset_y);
-            //printspr.drawBmpFile(SDFS,bmpsrc[i],0,0);
-            //Serial.print("DRAWING FILE DONE\n");
+#define LMV2_SD_BMP_CAC_MIN(x,y) ((x)<(y)?(x):(y)) //取最小值函数
+          else if(useGlobalSDIcon>i) { //绘制图标
+          uint8_t cached = 0; //检测是否已缓存
+          for(uint32_t j=0;j<LMV2_SD_BMP_CAC_MIN(cacheUsage,16u);j++){
+            if(iconDataCacheLabel[j]==bmpsrc[i]){
+              cached = j+1;
+              //Serial.printf("FOUND CACHED BITMAP DATA AT %d, I=%d\n\n",j,i);
+              break;
+            }
+          }
+          if(cached){ //绘制缓存的图标
+            in_tft->drawBitmap(drx,dry,iconDataCache[cached-1],16,16,1,0);
+          }
+          else{ //没有图标缓存
+            in_tft->drawBmpFile(SDFS,bmpsrc[i],drx,dry);
+            //创建图标缓存
+            iconDataCacheLabel[cacheUsage&15] = bmpsrc[i];
+            //Serial.printf("CACHING BMP FILE DATA, I=%d, CACHEUSAGE=%d\n\n",i,cacheUsage);
+            for(int16_t jj=0;jj<32;jj++) iconDataCache[cacheUsage&15][jj]=0;
+            for(int16_t ji=0;ji<256;ji++){
+              if(in_tft->readPixel(drx+(ji&15),dry+(ji>>4))) 
+                iconDataCache[cacheUsage&15][ji>>3] |= (1<<(7-(ji&7)));
+            }
+            //in_tft->readPixel(drx,dry,16,16,iconDataCache[cacheUsage&15]);
+            cacheUsage++; //此处最多支持4294967295步操作哈哈
+          }
             leftSpace=1;
           }
 #endif
