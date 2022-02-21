@@ -17,7 +17,9 @@ const char *icons[] = {
   icon1,icon2,icon1,icon2,nullptr,icon2,icon1,icon2,icon1
 };
 const char *test_txt[17]={
-  "标题数据","菜单项目1","支持很多功能","这很奇怪","\x03\x00\x00\x10\020icon1.bmp\xff选项10带有SD卡的图标文件",
+  "标题数据","菜单项目1","支持很多功能","这很奇怪",
+  //"\x03\x00\x00\x10\020icon1.bmp\xff选项10带有SD卡的图标文件",
+  "选项10带有SD卡的图标文件",
   "亲自写出来的","过年啦不想写代码了","咋办","支持UTF-8编码"
   "标题德莉莎数据","菜单可莉项目1","支持优拉la很多功能","神里绫人凌华雷电将军八重神子",
   "亲自写黯色空壳出来的","过年啦不想写代码了","咋办,渊上,不凹分了","不支持GBK编码","空"
@@ -51,12 +53,22 @@ void setup(){
   
   emw3.display(2);
   delay(1000);
-  emw3.drawBmpFile(SDFS,"/bmp/xiangqi1.bmp",0,0);
+  emw3.fillScreen(0xffff);
+  emw3.setCursor(0,0);
+  emw3.print("灰度测试 Beta, 需要分段修改lut");
   emw3.display(2);
-  delay(1000);
+  //emw3.drawBmpFile(SDFS,"/bmp/xiangqi1.bmp",0,0);
+  for(int i=1;i<16;i++){
+    emw3.setLut(1,i,16);
+    emw3.fillRect((i<<4)-12,32,16,64,0);
+    emw3.display(3);
+  }
+  delay(3000);
+  emw3.fillScreen(0xffff);
+  emw3.display(2);
   
   menu.setSDIcon(9,icons);
-  menu.setDrawMulti(1);
+  //menu.setDrawMulti(1);
   uint8_t sel = menu.listMenu(10,0,5,16,4,test_txt);
   emw3.clearDisplay(0xffff);
   emw3.setCursor(40,40);

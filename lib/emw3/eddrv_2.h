@@ -4,6 +4,8 @@
  * @brief 
  * @version 1.0
  * 
+ * Update: 2022-2-21
+ * 大幅度精简了没有必要的函数定义, 包含一些没什么用的低功耗函数
  * Update: 2022-2-14
  * 增加 setLut 函数: 允许单独修改某一个Lut数据,而不只是以数组为参数一次修改全部数据
  * Update: 2021-11-27
@@ -34,7 +36,7 @@ typedef struct {
 class EinkDrv_213 : public EinkDriver{
   public:
     EinkDrv_213();
-    void init(bool initial = true, uint16_t reset_duration = 20, bool pulldown_rst_mode = false);
+    void init(bool initial = false, uint16_t reset_duration = 20, bool pulldown_rst_mode = false);
     //void fill(uint16_t color); // 0x0 black, >0x0 white, to buffer
     // display buffer content to screen, useful for full screen buffer
     uint8_t _display(uint8_t partial_update_mode);
@@ -76,37 +78,19 @@ class EinkDrv_213 : public EinkDriver{
     static const bool _EinkDrv_Has_Colors = false;
     static const bool _EinkDrv_Has_Part_Show = true;
     static const bool _EinkDrv_Has_Part_Show_Fast = true;
-    // constructor
 
-    // methods (virtual)
-    //  Support for Bitmaps (Sprites) to Controller Buffer and to Screen
     //void clearScreen(uint8_t value = 0xFF); // init controller memory and screen (default white)
     void writeScreenBuffer(uint8_t value = 0xFF); // init controller memory (default white)
     // write to controller memory, without screen refresh; x and w should be multiple of 8
-    void writeImage(const uint8_t bitmap[], int16_t x, int16_t y, int16_t w, int16_t h, bool invert = false, bool mirror_y = false, bool pgm = false);
-    void writeImagePart(const uint8_t bitmap[], int16_t x_part, int16_t y_part, int16_t w_bitmap, int16_t h_bitmap,
-                        int16_t x, int16_t y, int16_t w, int16_t h, bool invert = false, bool mirror_y = false, bool pgm = false);
-    void writeImage(const uint8_t* black, const uint8_t* color, int16_t x, int16_t y, int16_t w, int16_t h, bool invert = false, bool mirror_y = false, bool pgm = false);
-    void writeImagePart(const uint8_t* black, const uint8_t* color, int16_t x_part, int16_t y_part, int16_t w_bitmap, int16_t h_bitmap,
-                        int16_t x, int16_t y, int16_t w, int16_t h, bool invert = false, bool mirror_y = false, bool pgm = false);
-    // write sprite of native data to controller memory, without screen refresh; x and w should be multiple of 8
-    void writeNative(const uint8_t* data1, const uint8_t* data2, int16_t x, int16_t y, int16_t w, int16_t h, bool invert = false, bool mirror_y = false, bool pgm = false);
-    // write to controller memory, with screen refresh; x and w should be multiple of 8
-    void drawImage(const uint8_t bitmap[], int16_t x, int16_t y, int16_t w, int16_t h, bool invert = false, bool mirror_y = false, bool pgm = false);
-    void drawImagePart(const uint8_t bitmap[], int16_t x_part, int16_t y_part, int16_t w_bitmap, int16_t h_bitmap,
-                       int16_t x, int16_t y, int16_t w, int16_t h, bool invert = false, bool mirror_y = false, bool pgm = false);
-    void drawImage(const uint8_t* black, const uint8_t* color, int16_t x, int16_t y, int16_t w, int16_t h, bool invert = false, bool mirror_y = false, bool pgm = false);
-    void drawImagePart(const uint8_t* black, const uint8_t* color, int16_t x_part, int16_t y_part, int16_t w_bitmap, int16_t h_bitmap,
-                       int16_t x, int16_t y, int16_t w, int16_t h, bool invert = false, bool mirror_y = false, bool pgm = false);
-    // write sprite of native data to controller memory, with screen refresh; x and w should be multiple of 8
-    void drawNative(const uint8_t* data1, const uint8_t* data2, int16_t x, int16_t y, int16_t w, int16_t h, bool invert = false, bool mirror_y = false, bool pgm = false);
+    void _epush_image(int16_t x, int16_t y, int16_t w, int16_t h, const uint8_t bitmap[], bool cls = false);
+    void _epush_imagePart(int16_t x_part, int16_t y_part, int16_t w_bitmap, int16_t h_bitmap,
+                        int16_t x, int16_t y, int16_t w, int16_t h, const uint8_t bitmap[]);
     void refresh(bool partial_update_mode = false); // screen refresh from controller memory to full screen
     void refresh(int16_t x, int16_t y, int16_t w, int16_t h); // screen refresh from controller memory, partial screen
     void refreshNoDelay(bool partial_update_mode = false); // screen refresh without delay() function
     void refreshNoDelay(int16_t x, int16_t y, int16_t w, int16_t h); // screen refresh partial without delay() function
     
-    void powerOff(); // turns off generation of panel driving voltages, avoids screen fading over time
-    void hibernate(); // turns powerOff() and sets controller to deep sleep for minimum power use, ONLY if wakeable by RST (rst >= 0)
+    void deepsleep(); // turns off generation of panel driving voltages, avoids screen fading over time
     void setLut(bool FullOrPart = 0, const uint8_t *lut = nullptr, uint8_t size = 0);
     void setLut(bool FullOrPart, uint8_t lut, uint8_t position = 0);
     const uint8_t * getLut(bool FullOrPart, uint8_t *size){

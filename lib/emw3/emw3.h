@@ -72,7 +72,7 @@ class EMW3 : public EinkDrv_213, public LGFX_Sprite {
       
 #else
       uint32_t tm = micros();
-      uint8_t res = _display(part&1); 
+      uint8_t res = _display(part); 
       if(part>=2) 
         while(digitalRead(EMW3_EPD_BUSY_PIN)==HIGH) ESP.wdtFeed();
       Serial.print(F("TIME COST (US): "));

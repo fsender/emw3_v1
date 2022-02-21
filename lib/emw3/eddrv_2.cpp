@@ -20,21 +20,16 @@ namespace emw3_EinkDriver{
   #define emw3_u16max(a,b) ((a) > (b) ? (a) : (b))
 
 EinkDrv_213::EinkDrv_213() :
-  EinkDriver(HIGH, 
-  10000000, 
-  WIDTH, 
-  HEIGHT, 
-  _EinkDrv_Has_Colors, 
-  _EinkDrv_Has_Part_Show, 
-  _EinkDrv_Has_Part_Show_Fast) {
-      _page_height = EMW3_HEIGHT;
-      _pages = 1;
-      _reverse = 1;
-      _mirror = false;
-      _using_partial_mode = false;
-      _current_page = 0;
-      _refreshing = 0;
-      _rSf.driver = this;
+  EinkDriver(HIGH, 10000000, WIDTH, HEIGHT, 
+  _EinkDrv_Has_Colors, _EinkDrv_Has_Part_Show, _EinkDrv_Has_Part_Show_Fast) {
+      _page_height = EMW3_HEIGHT; //垂直像素个数
+      _pages = 1;//页面数, 三色屏此数值为2
+      _reverse = 1; //默认反色
+      _mirror = false; //镜像
+      _using_partial_mode = false; //初始使用part_update
+      _current_page = 0;//当前页面数
+      _refreshing = 0;//是否正在刷新
+      _rSf.driver = this; //初始化驱动
 }
 void EinkDrv_213 ::startTr(){
   _refreshing = 1;
@@ -73,12 +68,12 @@ IRAM_ATTR void _rSfr_Cal_lBack_(_refresh_status_t *_fb){
   SPI.beginTransaction(_fb->driver->_spi_settings);
   _fb->driver->_writeCommand(0xff);
   if(bkup>=4) {
-    _fb->driver->writeImagePart(_fb->driver->_buffer,0,0,_fb->driver->WIDTH,_fb->driver->HEIGHT,
-    _fb->px,_fb->py,_fb->pw,_fb->ph);
-    _fb->driver->writeImagePart(_fb->driver->_buffer,0,0,_fb->driver->WIDTH,_fb->driver->HEIGHT,
-    _fb->x,_fb->y,_fb->w,_fb->h);
+    _fb->driver->_epush_imagePart(0,0,_fb->driver->WIDTH,_fb->driver->HEIGHT,
+    _fb->px,_fb->py,_fb->pw,_fb->ph,_fb->driver->_buffer);
+    _fb->driver->_epush_imagePart(0,0,_fb->driver->WIDTH,_fb->driver->HEIGHT,
+    _fb->x,_fb->y,_fb->w,_fb->h,_fb->driver->_buffer);
   }
-  else _fb->driver->writeImage(_fb->driver->_buffer,0,0,_fb->driver->WIDTH,_fb->driver->HEIGHT);
+  else _fb->driver->_epush_image(0,0,_fb->driver->WIDTH,_fb->driver->HEIGHT,_fb->driver->_buffer);
   //if (2==bkup) _fb->driver->powerOff();
   SPI.endTransaction();
   _fb->driver->_refreshing = 0;
@@ -93,18 +88,18 @@ uint8_t EinkDrv_213::_display(uint8_t partial_update_mode ){
       /*
     if(partial_update_mode&2){
       startTr();
-      writeImage(_buffer, 0, 0, WIDTH, _page_height);
+      _epush_image(0, 0, WIDTH, _page_height, _buffer);
       refresh(partial_update_mode&1);
-      writeImage(_buffer, 0, 0, WIDTH, _page_height);
+      _epush_image(0, 0, WIDTH, _page_height, _buffer);
       if (!partial_update_mode&1) powerOff();
       endTr();
     }
     else {*/
       startTr();
-      writeImage(_buffer, 0, 0, WIDTH, _page_height);
-      refreshNoDelay(partial_update_mode);
+      _epush_image(0, 0, WIDTH, _page_height, _buffer, partial_update_mode>=4);
+      refreshNoDelay(partial_update_mode &1);
       endTr();
-      _refreshing = 2 | (partial_update_mode);
+      _refreshing = 2 | (partial_update_mode &1);
       attachInterruptArg(EMW3_EPD_BUSY_PIN,(void(*)(void *))_rSfr_Cal_lBack_,&_rSf,FALLING);
     //}
     return next_frame = 0;
@@ -129,8 +124,7 @@ uint8_t EinkDrv_213::displayWindow(uint16_t x, uint16_t y, uint16_t w, uint16_t 
       uint16_t y_part = _reverse ? HEIGHT - h - y : y;
     if(async){
       startTr();
-      //writeImagePart(_buffer, x, y_part, WIDTH, _page_height, _rSf.px, _rSf.py, _rSf.pw, _rSf.ph);
-      writeImagePart(_buffer, x, y_part, WIDTH, _page_height, x, y, w, h);
+      _epush_imagePart( x, y_part, WIDTH, _page_height, x, y, w, h, _buffer);
       refreshNoDelay(x, y, w, h);
       endTr();
       _refreshing = 4;
@@ -142,9 +136,9 @@ uint8_t EinkDrv_213::displayWindow(uint16_t x, uint16_t y, uint16_t w, uint16_t 
     }
     else {
       startTr();
-      writeImagePart(_buffer, x, y_part, WIDTH, _page_height, x, y, w, h);
+      _epush_imagePart(x, y_part, WIDTH, _page_height, x, y, w, h, _buffer);
       refresh(x, y, w, h);
-      writeImagePart(_buffer, x, y_part, WIDTH, _page_height, x, y, w, h);
+      _epush_imagePart(x, y_part, WIDTH, _page_height, x, y, w, h, _buffer);
       endTr();
     }
     
@@ -171,38 +165,8 @@ void EinkDrv_213::setPartialWindow(uint16_t x, uint16_t y, uint16_t w, uint16_t 
       _pw_x -= _pw_x % 8;
 }
 
-/* void EinkDrv_213::clearScreen(uint8_t value){
-  _initial_write = false; // initial full screen buffer clean done
-  if (_initial_refresh){
-    _ed_fullscr_begin();
-    _edpart_area(0, 0, WIDTH, HEIGHT);
-    _writeCommand(0x24);
-    for (uint32_t i = 0; i < uint32_t(WIDTH) * uint32_t(HEIGHT) / 8; i++){
-      _writeData(value);
-    }
-    _ed_fullscr_disp();
-    _initial_refresh = false; // initial full update done
-  }
-  else{
-    if (!_using_partial_mode) _ed_partscr_begin();
-    _edpart_area(0, 0, WIDTH, HEIGHT);
-    _writeCommand(0x24);
-    for (uint32_t i = 0; i < uint32_t(WIDTH) * uint32_t(HEIGHT) / 8; i++){
-      _writeData(value);
-    }
-    _ed_partscr_disp();
-  }
-  if (!_using_partial_mode) _ed_partscr_begin();
-  _edpart_area(0, 0, WIDTH, HEIGHT);
-  _writeCommand(0x24);
-  for (uint32_t i = 0; i < uint32_t(WIDTH) * uint32_t(HEIGHT) / 8; i++){
-    _writeData(value);
-  }
-  _ed_partscr_disp();
-}*/
-
 void EinkDrv_213::writeScreenBuffer(uint8_t value){
-  _initial_write = false; // initial full screen buffer clean done
+  _init_stat = false; // initial full screen buffer clean done
   // this controller has no command to write "old data"
   /*if (_initial_refresh) clearScreen(value);
   else */
@@ -218,9 +182,7 @@ void EinkDrv_213::_edbuff_w(uint8_t value){
   }
 }
 
-void EinkDrv_213::writeImage(const uint8_t bitmap[], int16_t x, int16_t y, int16_t w, int16_t h,
-    bool invert, bool mirror_y, bool pgm){
-  if (_initial_write) writeScreenBuffer(); // initial full screen buffer clean
+void EinkDrv_213::_epush_image(int16_t x, int16_t y, int16_t w, int16_t h, const uint8_t bitmap[], bool cls){
   int16_t wb = (w + 7) / 8; // width bytes, bitmaps are padded
   x -= x % 8; // byte boundary
   w = wb * 8; // byte boundary
@@ -233,26 +195,22 @@ void EinkDrv_213::writeImage(const uint8_t bitmap[], int16_t x, int16_t y, int16
   w1 -= dx;
   h1 -= dy;
   if ((w1 <= 0) || (h1 <= 0)) return;
+  if (_init_stat) writeScreenBuffer(); // initial full screen buffer clean
   if (!_using_partial_mode) _ed_partscr_begin();
   _edpart_area(x1, y1, w1, h1);
   _writeCommand(0x24);
   for (int16_t i = 0; i < h1; i++){
     for (int16_t j = 0; j < w1 / 8; j++){
-      uint8_t data;
       // use wb, h of bitmap for index!
-      int16_t idx = mirror_y ? j + dx / 8 + (h - 1 - i) * wb : j + dx / 8 + i * wb;
-      if (pgm) data = pgm_read_byte(&bitmap[idx]);
-      else data = bitmap[idx];
-      if (invert) data = ~data;
-      _writeData(data);
+      _writeData(cls ? 0xff : bitmap[j + dx / 8 + i * wb]);
     }
   }
 }
 
-void EinkDrv_213::writeImagePart(const uint8_t bitmap[], int16_t x_part, int16_t y_part, 
-    int16_t w_bitmap, int16_t h_bitmap, int16_t x, int16_t y, int16_t w, int16_t h, 
-    bool invert, bool mirror_y, bool pgm){
-  if (_initial_write) writeScreenBuffer(); // initial full screen buffer clean
+
+void EinkDrv_213::_epush_imagePart(int16_t x_part, int16_t y_part, int16_t w_bitmap, int16_t h_bitmap, 
+    int16_t x, int16_t y, int16_t w, int16_t h, const uint8_t bitmap[]){
+  if (_init_stat) writeScreenBuffer(); // initial full screen buffer clean
   if ((w_bitmap < 0) || (h_bitmap < 0) || (w < 0) || (h < 0) 
     || (x_part < 0) || (x_part >= w_bitmap) || (y_part < 0) || (y_part >= h_bitmap)) return;
   int16_t wb_bitmap = (w_bitmap + 7) / 8; // width bytes, bitmaps are padded
@@ -275,79 +233,10 @@ void EinkDrv_213::writeImagePart(const uint8_t bitmap[], int16_t x_part, int16_t
   _writeCommand(0x24);
   for (int16_t i = 0; i < h1; i++){
     for (int16_t j = 0; j < w1 / 8; j++){
-      uint8_t data;
       // use wb_bitmap, h_bitmap of bitmap for index!
-      int16_t idx = mirror_y ? x_part / 8 + j + dx / 8 + ((h_bitmap - 1 - (y_part + i + dy))) * wb_bitmap : x_part / 8 + j + dx / 8 + (y_part + i + dy) * wb_bitmap;
-      if (pgm) data = pgm_read_byte(&bitmap[idx]);
-      else data = bitmap[idx];
-      if (invert) data = ~data;
-      _writeData(data);
+      _writeData(bitmap[x_part / 8 + j + dx / 8 + (y_part + i + dy) * wb_bitmap]);
     }
   }
-}
-
-void EinkDrv_213::writeImage(const uint8_t* black, const uint8_t* color, 
-    int16_t x, int16_t y, int16_t w, int16_t h, bool invert, bool mirror_y, bool pgm){
-  if (black)
-    writeImage(black, x, y, w, h, invert, mirror_y, pgm);
-}
-
-void EinkDrv_213::writeImagePart(const uint8_t* black, const uint8_t* color, 
-    int16_t x_part, int16_t y_part, int16_t w_bitmap, int16_t h_bitmap,
-    int16_t x, int16_t y, int16_t w, int16_t h, bool invert, bool mirror_y, bool pgm){
-  if (black) writeImagePart(black, x_part, y_part, w_bitmap, h_bitmap, x, y, w, h, invert, mirror_y, pgm);
-}
-
-void EinkDrv_213::writeNative(const uint8_t* data1, const uint8_t* data2, 
-    int16_t x, int16_t y, int16_t w, int16_t h, bool invert, bool mirror_y, bool pgm){
-  if (data1) writeImage(data1, x, y, w, h, invert, mirror_y, pgm);
-}
-
-void EinkDrv_213::drawImage(const uint8_t bitmap[], 
-    int16_t x, int16_t y, int16_t w, int16_t h, bool invert, bool mirror_y, bool pgm){
-  startTr();
-  writeImage(bitmap, x, y, w, h, invert, mirror_y, pgm);
-  refresh(x, y, w, h);
-  writeImage(bitmap, x, y, w, h, invert, mirror_y, pgm);
-  endTr();
-}
-
-void EinkDrv_213::drawImagePart(const uint8_t bitmap[], int16_t x_part, int16_t y_part, 
-    int16_t w_bitmap, int16_t h_bitmap, int16_t x, int16_t y, int16_t w, int16_t h, 
-    bool invert, bool mirror_y, bool pgm){
-  startTr();
-  writeImagePart(bitmap, x_part, y_part, w_bitmap, h_bitmap, x, y, w, h, invert, mirror_y, pgm);
-  refresh(x, y, w, h);
-  writeImagePart(bitmap, x_part, y_part, w_bitmap, h_bitmap, x, y, w, h, invert, mirror_y, pgm);
-  endTr();
-}
-
-void EinkDrv_213::drawImage(const uint8_t* black, const uint8_t* color, 
-    int16_t x, int16_t y, int16_t w, int16_t h, bool invert, bool mirror_y, bool pgm){
-  startTr();
-  writeImage(black, color, x, y, w, h, invert, mirror_y, pgm);
-  refresh(x, y, w, h);
-  writeImage(black, color, x, y, w, h, invert, mirror_y, pgm);
-  endTr();
-}
-
-void EinkDrv_213::drawImagePart(const uint8_t* black, const uint8_t* color, 
-    int16_t x_part, int16_t y_part, int16_t w_bitmap, int16_t h_bitmap,
-    int16_t x, int16_t y, int16_t w, int16_t h, bool invert, bool mirror_y, bool pgm){
-  startTr();
-  writeImagePart(black, color, x_part, y_part, w_bitmap, h_bitmap, x, y, w, h, invert, mirror_y, pgm);
-  refresh(x, y, w, h);
-  writeImagePart(black, color, x_part, y_part, w_bitmap, h_bitmap, x, y, w, h, invert, mirror_y, pgm);
-  endTr();
-}
-
-void EinkDrv_213::drawNative(const uint8_t* data1, const uint8_t* data2, int16_t x, 
-    int16_t y, int16_t w, int16_t h, bool invert, bool mirror_y, bool pgm){
-  startTr();
-  writeNative(data1, data2, x, y, w, h, invert, mirror_y, pgm);
-  refresh(x, y, w, h);
-  writeNative(data1, data2, x, y, w, h, invert, mirror_y, pgm);
-  endTr();
 }
 
 void EinkDrv_213::refresh(bool partial_update_mode){
@@ -405,17 +294,8 @@ void EinkDrv_213::refreshNoDelay(int16_t x, int16_t y, int16_t w, int16_t h){
   _ed_partscr_disp_noDelay();
 }
 
-void EinkDrv_213::powerOff(void){
+void EinkDrv_213::deepsleep(void){
   _edpwr_end();
-}
-
-void EinkDrv_213::hibernate(){
-  _edpwr_end();
-  if (_rst >= 0){
-    _writeCommand(0x10); // deep sleep mode
-    _writeData(0x1);     // enter deep sleep
-    _hibernating = true;
-  }
 }
 
 void EinkDrv_213::_edpart_area(uint16_t x, uint16_t y, uint16_t w, uint16_t h){

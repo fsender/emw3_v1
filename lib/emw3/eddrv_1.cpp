@@ -20,7 +20,7 @@ EinkDriver::EinkDriver(int16_t busy_level, uint32_t busy_timeout,
   _dc = EMW3_EPD_DC_PIN;
   _rst = EMW3_EPD_RST_PIN;
   _busy = EMW3_EPD_BUSY_PIN;
-  _initial_write = true;
+  _init_stat = true;
   _initial_refresh = true;
   _power_is_on = false;
   _using_partial_mode = false;
@@ -29,7 +29,7 @@ EinkDriver::EinkDriver(int16_t busy_level, uint32_t busy_timeout,
 }
 
 void EinkDriver::init(bool initial, uint16_t reset_duration, bool pulldown_rst_mode){
-  _initial_write = initial;
+  _init_stat = initial;
   _initial_refresh = initial;
   _pulldown_rst_mode = pulldown_rst_mode;
   _power_is_on = false;

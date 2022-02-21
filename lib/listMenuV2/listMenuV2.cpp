@@ -204,6 +204,14 @@ uint16_t listMenuV2::listMenu(int16_t x,int16_t y,uint8_t hlines,int16_t numitem
         delay(DEBOUNCE_DELAY_MS);
         continue;
     }
+    if(in_tft->getBtn(EMW3_BtnL) && in_tft->getBtn(EMW3_BtnR)) {
+      if( flipCombo>3 ) {
+        in_tft->setLut(true,0x0e,16);
+        in_tft->display(7);
+        in_tft->display(3);
+      }
+      flipCombo=0; 
+    } //新增自适应刷新速度功能
     if((!refreshFlag) || initial){
       char itemsFlag[16];
       sprintf_P(itemsFlag,PSTR("\x1f%d个选项"),numitem);
@@ -280,7 +288,6 @@ uint16_t listMenuV2::listMenu(int16_t x,int16_t y,uint8_t hlines,int16_t numitem
         initial=0;
       }
     }
-    if(in_tft->getBtn(EMW3_BtnL) && in_tft->getBtn(EMW3_BtnR)) flipCombo=0;  //新增自适应刷新速度功能
     yield();
   }
   if(long_pressed==2) selected = 0;
