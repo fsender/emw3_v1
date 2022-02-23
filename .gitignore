@@ -1,4 +1,8 @@
 /lib/LovyanGFX
+/.pio
+/.vscode
+/lib/ESP8266Audio
+
 # Prerequisites
 *.d
 
