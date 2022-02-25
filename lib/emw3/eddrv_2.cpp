@@ -3,18 +3,12 @@
  * @author fsender
  * @brief 
  * @version 1.0
- * 
- * Update: 2022-2-14
- * 增加 setLut 函数: 允许单独修改某一个Lut数据,而不只是以数组为参数一次修改全部数据
- * 2022-02-13
- * 优化了lut
- * 
- * Update: 2021-11-27
- * 初次创建
  */
 #include "eddrv_2.h"
 #include "emw3_defines.h"
 namespace emw3_EinkDriver{
+
+bool EinkDrv_213::interruptDisplay = 1;
 
   #define emw3_u16min(a,b) ((a) < (b) ? (a) : (b))
   #define emw3_u16max(a,b) ((a) > (b) ? (a) : (b))
@@ -66,7 +60,7 @@ IRAM_ATTR void _rSfr_Cal_lBack_(_refresh_status_t *_fb){
   uint8_t bkup = _fb->driver->_refreshing;
   detachInterrupt(EMW3_EPD_BUSY_PIN);
   SPI.beginTransaction(_fb->driver->_spi_settings);
-  _fb->driver->_writeCommand(0xff);
+  //_fb->driver->_writeCommand(0xff);
   if(bkup>=4) {
     _fb->driver->_epush_imagePart(0,0,_fb->driver->WIDTH,_fb->driver->HEIGHT,
     _fb->px,_fb->py,_fb->pw,_fb->ph,_fb->driver->_buffer);
@@ -81,7 +75,7 @@ IRAM_ATTR void _rSfr_Cal_lBack_(_refresh_status_t *_fb){
   else if(_fb->driver->next_frame ==2) _fb->driver->displayWindow(_fb->x,_fb->y,_fb->w,_fb->h,1);
 }
 uint8_t EinkDrv_213::_display(uint8_t partial_update_mode ){
-      if(_refreshing){ //上一次刷新还没结束
+      if(_refreshing || digitalRead(EMW3_EPD_BUSY_PIN)){ //上一次刷新还没结束
         next_frame = 1;
         return 1;
       }
@@ -99,8 +93,10 @@ uint8_t EinkDrv_213::_display(uint8_t partial_update_mode ){
       _epush_image(0, 0, WIDTH, _page_height, _buffer, partial_update_mode>=4);
       refreshNoDelay(partial_update_mode &1);
       endTr();
-      _refreshing = 2 | (partial_update_mode &1);
-      attachInterruptArg(EMW3_EPD_BUSY_PIN,(void(*)(void *))_rSfr_Cal_lBack_,&_rSf,FALLING);
+      if(interruptDisplay){
+        _refreshing = 2 | (partial_update_mode &1);
+        attachInterruptArg(EMW3_EPD_BUSY_PIN,(void(*)(void *))_rSfr_Cal_lBack_,&_rSf,FALLING);
+      }
     //}
     return next_frame = 0;
 }
@@ -127,12 +123,14 @@ uint8_t EinkDrv_213::displayWindow(uint16_t x, uint16_t y, uint16_t w, uint16_t 
       _epush_imagePart( x, y_part, WIDTH, _page_height, x, y, w, h, _buffer);
       refreshNoDelay(x, y, w, h);
       endTr();
-      _refreshing = 4;
-      _rSf.px = x;
-      _rSf.py = y;
-      _rSf.pw = w;
-      _rSf.ph = h;
-      attachInterruptArg(EMW3_EPD_BUSY_PIN,(void(*)(void *))_rSfr_Cal_lBack_,&_rSf,FALLING);
+      if(interruptDisplay){
+        _refreshing = 4;
+        _rSf.px = x;
+        _rSf.py = y;
+        _rSf.pw = w;
+        _rSf.ph = h;
+        attachInterruptArg(EMW3_EPD_BUSY_PIN,(void(*)(void *))_rSfr_Cal_lBack_,&_rSf,FALLING);
+      }
     }
     else {
       startTr();

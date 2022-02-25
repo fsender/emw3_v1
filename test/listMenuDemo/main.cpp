@@ -10,7 +10,7 @@
 EMW3 emw3;
 
 listMenuV2 menu(&emw3);
-const lgfx::U8g2font cityFont  ( chinese_city_gb2312  );
+const lgfx::U8g2font cn_font  ( chinese_city_gb2312  );
 
   const char *list_title = "Title 标题";
   const char *txt1 = "Sel1 Simple list";

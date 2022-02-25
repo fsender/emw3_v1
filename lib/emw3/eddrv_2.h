@@ -92,6 +92,7 @@ class EinkDrv_213 : public EinkDriver{
     
     void deepsleep(); // turns off generation of panel driving voltages, avoids screen fading over time
     void setLut(bool FullOrPart = 0, const uint8_t *lut = nullptr, uint8_t size = 0);
+    inline void setDepth(uint8_t dep){ if(dep<=0x0f) setLut(true,dep,16); }
     void setLut(bool FullOrPart, uint8_t lut, uint8_t position = 0);
     const uint8_t * getLut(bool FullOrPart, uint8_t *size){
       *size = FullOrPart?_ed_lut_part_size:_ed_lut_full_size;
@@ -112,13 +113,14 @@ class EinkDrv_213 : public EinkDriver{
     void _ed_partscr_disp();
     void _ed_fullscr_disp_noDelay();
     void _ed_partscr_disp_noDelay();
-  private:
     static uint8_t _ed_lut_part[40];
     static uint8_t _ed_lut_full[40];
     static uint8_t _ed_lut_full_size;
     static uint8_t _ed_lut_part_size;
     _refresh_status_t _rSf;
     uint8_t next_frame;
+  protected:
+    static bool interruptDisplay;
 };
 
 }// namespace 

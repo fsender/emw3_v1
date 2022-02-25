@@ -2,6 +2,13 @@
 /.pio
 /.vscode
 /lib/ESP8266Audio
+/lib/ArduinoJson
+/lib/ArduinoOTA
+/lib/ESP_EEPROM
+/lib/ESP8266SDUpdater
+/lib/ESPAsyncUDP
+/lib/Time
+/lib/WifiEspNow
 
 # Prerequisites
 *.d

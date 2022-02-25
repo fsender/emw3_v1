@@ -1,24 +1,18 @@
 /**
  * @file emw3.cpp
- * @author fsender
- * @brief 
+ * @author fsender (Bilibili FriendshipEnder) (Q:3253342798)
+ * @brief  EMW3 基础驱动封装库
  * @version 1.0.4
- * Update: 2022-02-13
- * 修复了SD卡图片不能直接显示,必须间接显示的bug
- * 原因: 未创建 palette, 未在初始化时调用 createPalette 函数
- * 
- * Update: 2021-11-27
- * 初次创建
  */
 #include "emw3.h"
 #include <SPI.h>
 #include <FS.h>
 #include <SD.h>
+#include <LittleFS.h>
 #include "emw3_defines.h"
 #include "eddrv_2.h"
 //using namespace emw3epd;
 using namespace emw3_EinkDriver;
-
 unsigned char EMW3::buff [4000] = {};
 EMW3::EMW3(){
   setColorDepth(1);
@@ -31,6 +25,52 @@ EMW3::EMW3(){
   _buffer = buff;
   ESP.wdtEnable(1000);
 }
+
+uint8_t EMW3::display(uint8_t part){ 
+      Serial.println("DISPLAY FX");
+#ifdef DEBUG_DISPLAY_SERIAL
+      /*
+      for(int i=6;i<128;i++){
+        for(int j=6;j<256;j++){
+          Serial.print(((this->buff[((j^255)<<4)|((i>>3)^15)])&(1<<(i&0x07)))?'.':'q');
+        }
+        Serial.print('\n');
+        yield();
+      }
+      return 0;
+      */
+      char wp[64];
+      wp[63] = '\0';
+      for(int i=6;i<128;i++){
+        char pixelprint = (((this->buff[((6^255)<<4)|((i>>3)^15)])&(1<<(i&0x07)))?0:2)
+        |(((this->buff[((7^255)<<4)|((i>>3)^15)])&(1<<(i&0x07)))?0:1);
+        //Serial.print(char('a'+pixelprint));
+        wp[0]='a'+pixelprint;
+        for(int j=8;j<256;j+=4){
+          pixelprint = (((this->buff[((j^255)<<4)|((i>>3)^15)])&(1<<(i&0x07)))?0:8)
+          |(((this->buff[(((j+1)^255)<<4)|((i>>3)^15)])&(1<<(i&0x07)))?0:4)
+          |(((this->buff[(((j+2)^255)<<4)|((i>>3)^15)])&(1<<(i&0x07)))?0:2)
+          |(((this->buff[(((j+3)^255)<<4)|((i>>3)^15)])&(1<<(i&0x07)))?0:1);
+          //Serial.print(char('a'+pixelprint));
+          wp[(j>>2)-1] = 'a'+pixelprint;
+        }
+        Serial.println(wp);
+        yield();
+      }
+      return 0;
+      
+#else
+      uint32_t tm = micros();
+      uint8_t res = _display(part); 
+      if(part>=2) 
+        while(digitalRead(EMW3_EPD_BUSY_PIN)==HIGH) ESP.wdtFeed();
+      Serial.print(F("TIME COST (US): "));
+      Serial.println(micros() - tm);
+      Serial.print('\n');
+      return res;
+#endif
+    }
+
 void EMW3::rotation(int rot){
   rot &=7;
   rot = 7-rot;

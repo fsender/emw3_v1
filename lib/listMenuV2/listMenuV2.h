@@ -6,8 +6,10 @@
  * 
  * 即将更新
  * 浮动键盘
+ * update 2022-02-25
  * 窗口,对话框,滑动条
  * 增加菜单快速度跳转(同时按住左右键触发滑动条)
+ * 修复了关于 drawMulti 中"\x01 - 对此条目绘制颜色反色" 不反色的bug
  * update 2022-02-14
  * 增加图标数据缓存,减少读写SD卡的次数
  * 增加动态lut, 来实现加速滑动(原来需要 ~350ms, 目标 ~200ms)
@@ -32,7 +34,7 @@
 #include "gb2312.h"
 //功能支持
 #define LMV2_USE_DRAWMULYI_CANVAS_SUPPORT
-//#define LMV2_USE_THEME_SUPPORT
+//#define LMV2_USE_THEME_SUPPORT //SD卡主题设置(未实现)
 #define LMV2_USE_SD_BMP_SUPPORT
 #define LMV2_USE_SD_TXT_SUPPORT
 #define _EMW3_ICON_PATH "/EMW3/sys/icon/"
@@ -47,11 +49,11 @@
 #define DEBOUNCE_DELAY_MS 25
 #define LONGPRESS_DELAY_MS 500
 //extern LGFX tft;
-extern const lgfx::U8g2font cityFont;
+extern const lgfx::U8g2font cn_font;
 
 class listMenuV2{
   public:
-    listMenuV2(EMW3 *intft = nullptr) : in_tft(intft) {}
+    listMenuV2(EMW3 *intft = nullptr) : in_tft(intft) { emw3_cnt_fs = &SDFS; }
     listMenuV2(EMW3 *intft, const char **text, void **interaction = nullptr);
     ~listMenuV2();
 /// @brief 设置每个选项的宽度/高度, 所有数据如果设为0即为使用默认值,标题高度设为1则禁用标题栏
@@ -98,7 +100,7 @@ enum themeselection{
   5 6 7                   */
     //uint8_t setThemeFromFile(int16_t styleBmps, const char **bmpFilePath);
 /// @brief 从SD卡图片文件设置标题栏位图信息
-    uint8_t setThemeFromFile(themeselection themesel,int16_t styleBmps, const char **bmpFilePath, fs::FS Fs = SDFS);
+    uint8_t setThemeFromFile(themeselection themesel,int16_t styleBmps, const char **bmpFilePath, fs::FS Fs = * emw3_cnt_fs);
 #endif
 #endif
 /** @brief 显示一个多级菜单
@@ -127,11 +129,11 @@ enum themeselection{
   void listMenuGUI(int16_t x,int16_t y,int16_t w,uint8_t hlines,uint8_t settings,
     const char **text, void ** interactions = nullptr, const char ** bmpsrc = nullptr);
 /// @brief 绘制圆角矩形,圆角半径固定为2
-  void themeRect(themeselection themesel, int16_t x,int16_t y,int16_t w,int16_t h,uint16_t color);
+  void themeRect(themeselection themesel, int16_t x,int16_t y,int16_t w,int16_t h,uint16_t color = 0);
 /// @brief 绘制填充圆角矩形,圆角半径固定为2, 只用于标题 (已经被 themeRect() 取代)
 //   void fillArcRect(int16_t x,int16_t y,int16_t w,int16_t h,uint16_t color);
-/// @brief 绘制返回对话框
-  void drawBackturn(int16_t x,int16_t y);
+/// @brief 绘制返回对话框 注意是居中显示的
+  void drawKeyText(int16_t x,int16_t y,const char *_2ch = nullptr,int16_t w = 40,int16_t h = 24);
 inline void setDrawMulti(bool en) { useDrawMulti = en; }
 #ifdef LMV2_USE_DRAWMULYI_CANVAS_SUPPORT
 /**
@@ -220,8 +222,75 @@ inline void setDrawMulti(bool en) { useDrawMulti = en; }
   void setSDIcon(uint16_t num,const char **path);
 #endif
 
+//适用于多语言情况
+#define CTG_CN_okText "确定"
+#define CTG_CN_backText "返回"
+#define CTG_CN_moreText "更多"
+/**
+ * @brief 显示对话框
+ * @param str 字符串指针
+ * @param dx 对话框模式
+ * Bit 1-0: 显示的按钮个数, 
+ * 0, 不显示按钮, 函数将会瞬间执行完,不会自动刷屏
+ * 1, 显示一个'确定'按钮,自动刷屏,将会在按钮松开后继续执行代码(带去抖)
+ * 2, 显示'确定','取消' 按钮,自动刷屏,将会在按钮松开后继续执行代码(带去抖)
+ * 3, 显示'确定','取消','更多'三个按钮,自动刷屏,将会在按钮松开后继续执行代码(带去抖)
+ * Bit 2==1, 自定义按钮文本
+ * 按钮文本将会定位在str[2],str[3],str[4]
+ * Bit 3==1, 强制支持多行文本.
+ * Bit 4==1, 自动刷屏模式强行设置为全局刷新.
+ * Bit 5==1, 显示SD卡上的图标,预留图标大小为64x64图标路径为str[1].
+ * Bit 6==1, 显示图标,图标数组,数据为str[1].默认尺寸16x16, 
+ * 如果Bit 5==1则为32x32, 如果Bit 7==1则为48x48, 如果Bit 5和Bit 7==1则为64x64
+ * @param dmultiw,dmultih 若非0,则用drawMulti渲染对话框, 此数值为渲染宽度 (不支持多行文本)
+ * @return uint8_t 选中的值
+ */
+  uint8_t drawDialog(const char **str,uint8_t dx,uint8_t dmultiw = 0,
+    uint8_t dmultih = 0,int16_t x=-32768,int16_t y=-32768);
+
+/**
+ * @brief 设置 menu 的默认文件系统, 启动默认是SD卡文件系统
+ * @param ing_FS 文件系统, 支持SD卡(SDFS), SPIFFS, LittleFS
+ */
+  inline void setFS(fs::FS &ing_FS){ emw3_cnt_fs = &ing_FS; }
+/**
+ * @brief 单项功能选择框,一行两个功能对应两个返回值,最多10个,没有标题,不可返回
+ * @param sel 选项个数
+ * @param str 选项字符串
+ * @param btnlen 选项按钮长度
+ * @return 选择了的选项
+ */
+  uint8_t selectionList(uint8_t sel, const char ** str, int16_t btnlen = 64);
+
+#define LMV2_SLIDER_D_WIDTH 64
+/**
+ * @brief 滑动条 长按中间键确定输入, 同时按住左右键退出
+ * @param str 选项文本
+ * @param minv,maxv 最大/最小值
+ * @param initialVal 初始值
+ * @return 选择了的值
+ */
+  int32_t slider(const char * str, int32_t minv=0, int32_t maxv=100, int32_t initialVal=0);
+
+  //键盘输入函数, 未实现
+  //int32_t getKNum(int32_t initialVal = 0);
+  //size_t getKString(char * srcstr, int32_t maxlen = 0);
+  //size_t getKChinese(char * srcstr, int32_t maxlen = 0);
+
+
+
+
+
+
+
+
+
+
+
+/*------------------------PRIVATE-----东西太多了,让我理清一下...------------------*/
 private:
-  EMW3 *in_tft;
+  EMW3 * in_tft;
+  fs::FS * emw3_cnt_fs;
   const char ** _text = nullptr;
   void ** _intera = nullptr;
 /*!
