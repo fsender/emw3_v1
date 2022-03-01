@@ -8,7 +8,7 @@
 #include "emw3_defines.h"
 namespace emw3_EinkDriver{
 
-bool EinkDrv_213::interruptDisplay = 1;
+bool EinkDrv_213::interruptDisplay =0;
 
   #define emw3_u16min(a,b) ((a) < (b) ? (a) : (b))
   #define emw3_u16max(a,b) ((a) > (b) ? (a) : (b))

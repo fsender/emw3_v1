@@ -5,19 +5,15 @@
 #define LGFX_USE_V1
 #include "LovyanGFX.hpp"
 #include "emw3.h"
-#include "gb2312.h"   //字体
-#include "osmall5_tf.h"   //字体
+#include "gb2312.h"
 #include "listMenuV2.h"
-#include "emw3keyboard.h"
 EMW3 emw3;
 
 listMenuV2 menu(&emw3);
-emw3Keyboard kbd(&emw3);
 uint32_t chksum = 1234567890, chk0 = 0;
 uint32_t batdat = 0;
 
 const lgfx::U8g2font cn_font  ( chinese_city_gb2312  );
-const lgfx::U8g2font small5_font  ( ctg_u8g2_font_osmall5_tf  );
 const char icon1[] = "/EMW3/sys/icon/bmpf.bmp";
 const char icon2[] = "/EMW3/sys/icon/emw3_2.bmp";
 const char icon3[] = "/EMW3/sys/icon/keyboard.bmp";
@@ -41,7 +37,7 @@ void setup(){
     emw3.setTextColor(0);
     loop();
   }
-  else if(emw3.getBtn(EMW3_BtnM) == 0){
+  else {
     chksum = 1234567890;
     ESP.rtcUserMemoryWrite(0,&chksum,4);
     ESP.rtcUserMemoryWrite(1,&chk0,4);
@@ -76,16 +72,8 @@ void setup(){
   emw3.display(2);
   delay(1000);
   
-  char willPut[32] ="测试";
-  Serial.print("On-Screen Keyboard Input: ");
-  Serial.println(kbd.getchs(willPut,sizeof(willPut)-1));
-  Serial.println(willPut);
-  Serial.println();
-  emw3.display(3);
-  delay(1000);
-
   emw3.clearDisplay(1);
-  int rtn = menu.slider("滑动滑动条滑条");
+  int rtn = menu.slider("滑动滑动条滑动条滑动条滑动条滑动条滑动条滑条滑条");
   emw3.setCursor(100,0);
   emw3.print(rtn);
   emw3.display(3);
@@ -104,7 +92,9 @@ void setup(){
   const char * stg[6] = {
     stg1,stg2,stg3,stg4,stg5
   };
-    menu.selectionList(5,stg,96);
+  for(int i=3;i<=5;i++){
+    menu.selectionList(i,stg,96);
+  }
   /*
   emw3.drawBmpFile(SDFS,"/bmp/xiangqi1.bmp",0,0);
   for(int i=1;i<16;i++){

@@ -81,6 +81,7 @@ uint16_t listMenuV2::listMenu(int16_t x,int16_t y,uint8_t hlines,int16_t numitem
 #endif
   if(interactions != nullptr) intera[0] = interactions[0];
   while(in_tft->getBtn(EMW3_BtnM)==0) yield();
+  delay(DEBOUNCE_DELAY_MS);
   //Serial.println("INITIAL DISPLAY!!\n");
   if(numitem==0){ //无条目
     const char msg[] = "\0370个选项";
@@ -1211,20 +1212,20 @@ uint8_t listMenuV2::drawDialog(const char **str,uint8_t dx,uint8_t dmultiw,uint8
     while(in_tft->getBtn(EMW3_BtnM)){
       if(in_tft->getBtn(EMW3_BtnL)==0 && (dx&3)==3){
         drawKeyText(x+w/2-4-gBtnWid,y+h-14,moreText,gBtnWid,-20);
-        in_tft->display(1);
+        in_tft->display(3);
         while(in_tft->getBtn(EMW3_BtnL)==0) yield();
         got = 2; break;
       } 
       else if(in_tft->getBtn(EMW3_BtnR)==0 && (dx&3)>=2){
         drawKeyText(x+w/2+4+gBtnWid,y+h-14,backText,gBtnWid,-20);
-        in_tft->display(1);
+        in_tft->display(3);
         while(in_tft->getBtn(EMW3_BtnR)==0) yield();
         got = 1; break;
       }
       yield();
     }
     if(got ==0) { drawKeyText(x+w/2,y+h-14,okText,gBtnWid,20);
-        in_tft->display(1); }
+        in_tft->display(3); }
     while(!in_tft->getBtn(EMW3_BtnM)) yield();
     delay(DEBOUNCE_DELAY_MS);
   }

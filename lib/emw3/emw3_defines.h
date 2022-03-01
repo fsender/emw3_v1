@@ -1,5 +1,5 @@
 /**
- * @file emw3_definas.h
+ * @file emw3_defines.h
  * @author fsender (f_ender@163.com)
  * @brief provide emw3 brick pin definations.
  * 
