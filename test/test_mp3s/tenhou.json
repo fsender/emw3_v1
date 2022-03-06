@@ -1,0 +1,17 @@
+{
+  "ver":1.0,
+  "se":{
+    "25":{"url":"https://raw.githubusercontent.com/fsender/emw3_v1/master/test/test_mp3s/bmw_peng.mp3"},
+    "26":{"url":"https://raw.githubusercontent.com/fsender/emw3_v1/master/test/test_mp3s/peng.mp3"},
+    "27":{"url":"https://raw.githubusercontent.com/fsender/emw3_v1/master/test/test_mp3s/bmw_gang.mp3"},
+    "28":{"url":"https://raw.githubusercontent.com/fsender/emw3_v1/master/test/test_mp3s/gang.mp3"},
+    "29":{"url":"https://raw.githubusercontent.com/fsender/emw3_v1/master/test/test_mp3s/bmw_chi.mp3"},
+    "30":{"url":"https://raw.githubusercontent.com/fsender/emw3_v1/master/test/test_mp3s/chi.mp3"},
+    "31":{"url":"https://raw.githubusercontent.com/fsender/emw3_v1/master/test/test_mp3s/bmw_li.mp3"},
+    "32":{"url":"https://raw.githubusercontent.com/fsender/emw3_v1/master/test/test_mp3s/li.mp3"},
+    "33":{"url":"https://raw.githubusercontent.com/fsender/emw3_v1/master/test/test_mp3s/bmw_ron.mp3"},
+    "34":{"url":"https://raw.githubusercontent.com/fsender/emw3_v1/master/test/test_mp3s/ron.mp3"},
+    "35":{"url":"https://raw.githubusercontent.com/fsender/emw3_v1/master/test/test_mp3s/bmw_zimo.mp3"},
+    "36":{"url":"https://raw.githubusercontent.com/fsender/emw3_v1/master/test/test_mp3s/zimo.mp3"},
+  }
+}
