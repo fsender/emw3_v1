@@ -1,6 +1,6 @@
 {
   "ver":1.0,
-  "se":{
+  "se":[
     "25":{"url":"https://raw.githubusercontent.com/fsender/emw3_v1/master/test/test_mp3s/bmw_peng.mp3"},
     "26":{"url":"https://raw.githubusercontent.com/fsender/emw3_v1/master/test/test_mp3s/peng.mp3"},
     "27":{"url":"https://raw.githubusercontent.com/fsender/emw3_v1/master/test/test_mp3s/bmw_gang.mp3"},
@@ -13,5 +13,5 @@
     "34":{"url":"https://raw.githubusercontent.com/fsender/emw3_v1/master/test/test_mp3s/ron.mp3"},
     "35":{"url":"https://raw.githubusercontent.com/fsender/emw3_v1/master/test/test_mp3s/bmw_zimo.mp3"},
     "36":{"url":"https://raw.githubusercontent.com/fsender/emw3_v1/master/test/test_mp3s/zimo.mp3"}
-  }
+  ]
 }
