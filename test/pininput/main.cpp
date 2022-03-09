@@ -79,7 +79,7 @@ void setup(){
   
   char willPut[32] ="测试";
   Serial.print("On-Screen Keyboard Input: ");
-  Serial.println(kbd.getstr(willPut,sizeof(willPut)-1,40,10));
+  Serial.println(kbd.getstr(willPut,sizeof(willPut)-1,160,30));
   Serial.println(willPut);
   Serial.println();
   emw3.display(3);
@@ -138,6 +138,7 @@ void setup(){
   delay(1000);
   chksum = 1234567890;
   ESP.rtcUserMemoryWrite(0,&chksum,4);
+  ESP.rtcUserMemoryWrite(1,&batdat,4);
 }
 int lastbatv=0;
 void loop(){

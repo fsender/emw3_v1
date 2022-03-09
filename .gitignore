@@ -1,14 +1,14 @@
-/lib/LovyanGFX
-/.pio
-/.vscode
-/lib/ESP8266Audio
-/lib/ArduinoJson
-/lib/ArduinoOTA
-/lib/ESP_EEPROM
-/lib/ESP8266SDUpdater
-/lib/ESPAsyncUDP
-/lib/Time
-/lib/WifiEspNow
+lib/LovyanGFX
+.pio
+.vscode
+lib/ESP8266Audio
+lib/ArduinoJson
+lib/ArduinoOTA
+lib/ESP_EEPROM
+lib/ESP8266SDUpdater
+lib/ESPAsyncUDP
+lib/Time
+lib/WifiEspNow
 
 # Prerequisites
 *.d
@@ -35,7 +35,6 @@
 # Compiled Static libraries
 *.lai
 *.la
-*.a
 *.lib
 
 # Executables
