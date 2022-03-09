@@ -5,6 +5,7 @@
  * @version 1.0.4
  * Update: 2022-3-9
  * push16bitSprite函数, 能更方便的显示16bit的灰度图像
+ * 现在按钮定义随屏幕旋转方向自动旋转(旋转180°时, 左键变成了右键, etc.)
  * 
  * Update: 2022-02-25
  * 现在中断刷新可以自己开启或关闭了
@@ -85,6 +86,6 @@ class EMW3 : public EinkDrv_213, public LGFX_Sprite {
     //for 250 * 122 sized buffer
     static unsigned char buff [4000];
 };
-// preset lut mode.
+extern uint8_t keyL,keyM,keyR;
 
 #endif

@@ -23,6 +23,9 @@ EMW3::EMW3(){
   setRotation(7); // real val:0
   //_buffer = (uint8_t *)createSprite(EMW3_REAL_WIDTH,EMW3_HEIGHT);
   _buffer = buff;
+  keyL = EMW3_BtnL;
+  keyM = EMW3_BtnM;
+  keyR = EMW3_BtnR;
   ESP.wdtEnable(1000);
 }
 
@@ -72,10 +75,22 @@ uint8_t EMW3::display(uint8_t part){
     }
 
 void EMW3::rotation(int rot){
+  if(rot<=1){
+    keyL = EMW3_BtnL;
+    keyR = EMW3_BtnR;
+  }
+  else{
+    keyR = EMW3_BtnL;
+    keyL = EMW3_BtnR;
+  }
   rot &=7;
   rot = 7-rot;
-  if(rot<=1) rot+=2;
-  else if(rot<=3) rot-=2;
+  if(rot<=1){
+    rot+=2;
+  }
+  else if(rot<=3) {
+    rot-=2;
+  }
   //new 0  old 7
   //new 1  old 6
   //new 2  old 5
@@ -89,9 +104,9 @@ void EMW3::rotation(int rot){
 }
 uint8_t EMW3::getBtn(uint8_t btn){
   /*
-  if(btn==EMW3_BtnL) BtnL_lastpress=1;
-  if(btn==EMW3_BtnM) BtnM_lastpress=1;
-  if(btn==EMW3_BtnR) BtnR_lastpress=1;
+  if(btn==keyL) BtnL_lastpress=1;
+  if(btn==keyM) BtnM_lastpress=1;
+  if(btn==keyR) BtnR_lastpress=1;
   */
   pinMode(btn,INPUT_PULLUP);
   uint8_t readb = digitalRead(btn);
@@ -115,3 +130,4 @@ void EMW3::push16bitSprite(LGFX_Sprite spr16bit, int x, int y){
     display(3);
   }
 }
+uint8_t keyL,keyM,keyR;

@@ -80,7 +80,7 @@ uint16_t listMenuV2::listMenu(int16_t x,int16_t y,uint8_t hlines,int16_t numitem
   }
 #endif
   if(interactions != nullptr) intera[0] = interactions[0];
-  while(in_tft->getBtn(EMW3_BtnM)==0) yield();
+  while(in_tft->getBtn(keyM)==0) yield();
   delay(DEBOUNCE_DELAY_MS);
   //Serial.println("INITIAL DISPLAY!!\n");
   if(numitem==0){ //无条目
@@ -89,9 +89,9 @@ uint16_t listMenuV2::listMenu(int16_t x,int16_t y,uint8_t hlines,int16_t numitem
     listMenuGUI(x,y,width_max,hlines,settings,disp,nullptr,disp_icon);
     themeRect(themeNormal, x,y+height_max*(cursor-1)+title_height_max,width_max,height_max,0);
     in_tft->display(3);
-    while(in_tft->getBtn(EMW3_BtnM)==1) yield();
+    while(in_tft->getBtn(keyM)==1) yield();
     delay(DEBOUNCE_DELAY_MS);
-    while(in_tft->getBtn(EMW3_BtnM)==0) yield();
+    while(in_tft->getBtn(keyM)==0) yield();
     delay(DEBOUNCE_DELAY_MS);
     return 0;
   }
@@ -113,9 +113,9 @@ uint16_t listMenuV2::listMenu(int16_t x,int16_t y,uint8_t hlines,int16_t numitem
     listMenuGUI(x,y,width_max,hlines,settings,disp,intera,disp_icon);
     themeRect(themeNormal, x,y+height_max*(cursor-1)+title_height_max,width_max,height_max,0);
     in_tft->display(3);
-    while(in_tft->getBtn(EMW3_BtnM)==1) yield();
+    while(in_tft->getBtn(keyM)==1) yield();
     delay(DEBOUNCE_DELAY_MS);
-    while(in_tft->getBtn(EMW3_BtnM)==0) {
+    while(in_tft->getBtn(keyM)==0) {
       if(!beginPress) {
         beginPress=millis();
         delay(DEBOUNCE_DELAY_MS);
@@ -123,7 +123,7 @@ uint16_t listMenuV2::listMenu(int16_t x,int16_t y,uint8_t hlines,int16_t numitem
       if(millis()-beginPress>LONGPRESS_DELAY_MS){
         drawKeyText(x+width_max/2,y+h/2);
         in_tft->display(3);
-        while(in_tft->getBtn(EMW3_BtnM)==0) yield();
+        while(in_tft->getBtn(keyM)==0) yield();
         delay(DEBOUNCE_DELAY_MS);
         return 0;
       }
@@ -135,7 +135,7 @@ uint16_t listMenuV2::listMenu(int16_t x,int16_t y,uint8_t hlines,int16_t numitem
   for(;;){
     //Serial.println("MAIN LOOP GOING!!\n");
     if((pressMillis = millis()) > refreshFlag){
-      if(!in_tft->getBtn(EMW3_BtnL)){
+      if(!in_tft->getBtn(keyL)){
         if(selected <= 1) {
           selected = numitem;
           cursor=(hlines>2?hlines-1:hlines);
@@ -153,7 +153,7 @@ uint16_t listMenuV2::listMenu(int16_t x,int16_t y,uint8_t hlines,int16_t numitem
         refreshFlag=0;
         if(flipCombo<0x0b) flipCombo++;  //新增自适应刷新速度功能
       }
-      else if(!in_tft->getBtn(EMW3_BtnR)){
+      else if(!in_tft->getBtn(keyR)){
         if(selected >= numitem) {
           selected = 1;
           cursor_changed = 4;
@@ -172,7 +172,7 @@ uint16_t listMenuV2::listMenu(int16_t x,int16_t y,uint8_t hlines,int16_t numitem
         if(flipCombo<0x0b) flipCombo++;  //新增自适应刷新速度功能
       }
     }
-    while(in_tft->getBtn(EMW3_BtnM)==0) {
+    while(in_tft->getBtn(keyM)==0) {
       if(!beginPress) {
         beginPress=millis();
         if(interactions != nullptr && interactions[selected] != nullptr && useDrawMulti){
@@ -197,7 +197,7 @@ uint16_t listMenuV2::listMenu(int16_t x,int16_t y,uint8_t hlines,int16_t numitem
       if(millis()-beginPress>LONGPRESS_DELAY_MS){
         drawKeyText(x+width_max/2,y+h/2);
         in_tft->display(3);
-        while(in_tft->getBtn(EMW3_BtnM)==0) yield();
+        while(in_tft->getBtn(keyM)==0) yield();
         delay(DEBOUNCE_DELAY_MS);
         long_pressed = 2;
         break;
@@ -210,7 +210,7 @@ uint16_t listMenuV2::listMenu(int16_t x,int16_t y,uint8_t hlines,int16_t numitem
         delay(DEBOUNCE_DELAY_MS);
         continue;
     }
-    if(in_tft->getBtn(EMW3_BtnL) && in_tft->getBtn(EMW3_BtnR)) {
+    if(in_tft->getBtn(keyL) && in_tft->getBtn(keyR)) {
       if( flipCombo>5 ) {
         in_tft->setLut(true,0x0e,16);
         in_tft->display(7);
@@ -1209,24 +1209,24 @@ uint8_t listMenuV2::drawDialog(const char **str,uint8_t dx,uint8_t dmultiw,uint8
   in_tft->display((dx&16)?2:3);
   uint8_t got = 0;
   if((dx&3)>=1){
-    while(in_tft->getBtn(EMW3_BtnM)){
-      if(in_tft->getBtn(EMW3_BtnL)==0 && (dx&3)==3){
+    while(in_tft->getBtn(keyM)){
+      if(in_tft->getBtn(keyL)==0 && (dx&3)==3){
         drawKeyText(x+w/2-4-gBtnWid,y+h-14,moreText,gBtnWid,-20);
         in_tft->display(3);
-        while(in_tft->getBtn(EMW3_BtnL)==0) yield();
+        while(in_tft->getBtn(keyL)==0) yield();
         got = 2; break;
       } 
-      else if(in_tft->getBtn(EMW3_BtnR)==0 && (dx&3)>=2){
+      else if(in_tft->getBtn(keyR)==0 && (dx&3)>=2){
         drawKeyText(x+w/2+4+gBtnWid,y+h-14,backText,gBtnWid,-20);
         in_tft->display(3);
-        while(in_tft->getBtn(EMW3_BtnR)==0) yield();
+        while(in_tft->getBtn(keyR)==0) yield();
         got = 1; break;
       }
       yield();
     }
     if(got ==0) { drawKeyText(x+w/2,y+h-14,okText,gBtnWid,20);
         in_tft->display(3); }
-    while(!in_tft->getBtn(EMW3_BtnM)) yield();
+    while(!in_tft->getBtn(keyM)) yield();
     delay(DEBOUNCE_DELAY_MS);
   }
   return got;
@@ -1245,17 +1245,17 @@ uint8_t listMenuV2::selectionList(uint8_t sel, const char ** str, int16_t btnlen
       drawKeyText(drx-btnlen/2-3+(i&1)*(btnlen+6),dry-11*(csel-(i&254))+11,str[i],btnlen,i==cnt?-20:20);
     in_tft->display(3);
     for(;;){
-    if(in_tft->getBtn(EMW3_BtnM)==0) {
-      while(in_tft->getBtn(EMW3_BtnM)==0) yield();
+    if(in_tft->getBtn(keyM)==0) {
+      while(in_tft->getBtn(keyM)==0) yield();
       delay(DEBOUNCE_DELAY_MS);
       return cnt;
     }
-    if(in_tft->getBtn(EMW3_BtnL)==0) {
+    if(in_tft->getBtn(keyL)==0) {
       if(cnt == 0) cnt = sel;
       cnt--;
       break;
     }
-    else if(in_tft->getBtn(EMW3_BtnR)==0) {
+    else if(in_tft->getBtn(keyR)==0) {
       if(cnt == sel-1) cnt = 0;
       else cnt++;
       break;
@@ -1298,17 +1298,17 @@ int32_t listMenuV2::slider(const char * str, int32_t minv, int32_t maxv, int32_t
     workspr.createSprite(LMV2_SLIDER_D_WIDTH,16);
     for(;;){// slider的控制代码
       int32_t iVal2 =iVal; //备份原始数据, 用于比较
-      if(in_tft->getBtn(EMW3_BtnL) == 0) {
-        if(in_tft->getBtn(EMW3_BtnR) == 0) {
+      if(in_tft->getBtn(keyL) == 0) {
+        if(in_tft->getBtn(keyR) == 0) {
           drawKeyText(in_tft->width()>>1,in_tft->height()>>1,"取销操作",72,24);
           in_tft->display(3);
-          while(in_tft->getBtn(EMW3_BtnL) == 0 || in_tft->getBtn(EMW3_BtnR) == 0) yield();
+          while(in_tft->getBtn(keyL) == 0 || in_tft->getBtn(keyR) == 0) yield();
           delay(DEBOUNCE_DELAY_MS);
           return initialVal;
         }
         else iVal -= slideSpeed;
       }
-      else if(in_tft->getBtn(EMW3_BtnR) == 0) iVal += slideSpeed;
+      else if(in_tft->getBtn(keyR) == 0) iVal += slideSpeed;
       //Serial.printf("%d %d\n",iVal, iVal2);
 
       if(iVal<minv) iVal = minv;
@@ -1341,8 +1341,8 @@ int32_t listMenuV2::slider(const char * str, int32_t minv, int32_t maxv, int32_t
         firstIn = 0;
       }
       else slideSpeed = 1;
-      if(in_tft->getBtn(EMW3_BtnM) == 0){
-        while(in_tft->getBtn(EMW3_BtnM) == 0) yield();
+      if(in_tft->getBtn(keyM) == 0){
+        while(in_tft->getBtn(keyM) == 0) yield();
         delay(DEBOUNCE_DELAY_MS);
         return iVal;
       }

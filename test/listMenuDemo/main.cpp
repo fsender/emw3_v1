@@ -103,7 +103,7 @@ void setup(){
   Serial.println("Display 3!");
   //delay(1000);
   Serial.println(SD.begin(EMW3_SD_CS_PIN));
-  pinMode(EMW3_BtnR,INPUT_PULLUP);
+  pinMode(keyR,INPUT_PULLUP);
   //emw3.fillScreen(TFT_DARKCYAN);
   //emw3.drawBmpFile(SDFS,"/bmp/bb4.bmp",40,40);
   //Serial.println("load pic success1");

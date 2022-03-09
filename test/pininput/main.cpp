@@ -34,7 +34,7 @@ const char *test_txt[17]={
 void setup(){
   ESP.rtcUserMemoryRead(0,&chksum,4);
   if(chksum == 1234567890){
-    if(emw3.getBtn(EMW3_BtnM)==1) {
+    if(emw3.getBtn(keyM)==1) {
       emw3.init(false);
       emw3.setFont(&cn_font);
       emw3.setTextColor(0);
