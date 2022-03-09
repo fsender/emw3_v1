@@ -1,6 +1,6 @@
 lib/LovyanGFX
-.pio
-.vscode
+/.pio/*
+/.vscode/*
 lib/ESP8266Audio
 lib/ArduinoJson
 lib/ArduinoOTA
