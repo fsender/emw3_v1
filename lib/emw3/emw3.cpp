@@ -102,3 +102,16 @@ uint8_t EMW3::getBtn(uint8_t btn){
   }
   return readb;
 }
+void EMW3::push16bitSprite(LGFX_Sprite spr16bit, int x, int y){
+  for(int coloridx=0;coloridx<16;coloridx++){
+    setDepth(coloridx);
+    for(int i=0;i<spr16bit.height();i++){
+      for(int j=0;j<spr16bit.width();j++){
+        if(spr16bit.readPixel(j,i)/0x1081 == 15-coloridx)
+          drawPixel((x>0?x:0)+j,(y>0?y:0)+i,0);
+        yield();
+      }
+    }
+    display(3);
+  }
+}

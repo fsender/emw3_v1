@@ -3,6 +3,9 @@
  * @author fsender
  * @brief EMW3 基础驱动封装库
  * @version 1.0.4
+ * Update: 2022-3-9
+ * push16bitSprite函数, 能更方便的显示16bit的灰度图像
+ * 
  * Update: 2022-02-25
  * 现在中断刷新可以自己开启或关闭了
  * 
@@ -34,8 +37,14 @@
 #define LGFX_USE_V1
 #include <LovyanGFX.hpp>
 #include <lgfx/v1/LGFX_Sprite.hpp>
+#include "gb2312.h"   //字体
+#include "osmall5_tf.h"   //字体
 using namespace emw3_EinkDriver;
 //using namespace emw3epd;
+
+const lgfx::U8g2font cn_font  ( chinese_city_gb2312  );
+const lgfx::U8g2font osmall5_font  ( ctg_u8g2_font_osmall5_tf  );
+
 class EMW3 : public EinkDrv_213, public LGFX_Sprite {
   public:
     EMW3();
@@ -66,6 +75,12 @@ class EMW3 : public EinkDrv_213, public LGFX_Sprite {
      *  @param en 
      */
     inline void setInterruptDisplay(bool en = 1) { interruptDisplay = en; _refreshing = 0; }
+    inline bool getInterruptDisplay(           ) { return interruptDisplay; }
+    /** @brief 显示一个16位灰度的图块
+     *  @param spr16bit 目标图块
+     *  @param x 显示的x坐标
+     *  @param y 显示的y坐标 */
+    void push16bitSprite(LGFX_Sprite spr16bit, int x, int y);
   private:
     //for 250 * 122 sized buffer
     static unsigned char buff [4000];
