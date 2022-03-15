@@ -1,8 +1,11 @@
-/**
+/******* FRIENDSHIPENDER *****
  * @file emw3.h
- * @author fsender
+ * @author FriendshipEnder
  * @brief EMW3 基础驱动封装库
  * @version 1.0.4
+ * Update: 2022-3-13
+ * 重新封装了init()函数(初始化函数),更方便使用,加入了功能相同的begin()函数
+ * 
  * Update: 2022-3-9
  * push16bitSprite函数, 能更方便的显示16bit的灰度图像
  * 现在按钮定义随屏幕旋转方向自动旋转(旋转180°时, 左键变成了右键, etc.)
@@ -49,6 +52,20 @@ const lgfx::U8g2font osmall5_font  ( ctg_u8g2_font_osmall5_tf  );
 class EMW3 : public EinkDrv_213, public LGFX_Sprite {
   public:
     EMW3();
+    /** @brief 初始化EMW3各个组件
+     *  @param initOptions 参数选项
+     * Bit 0: 是否初始化SD卡
+     * Bit 1: 是否在初始化完成后清屏(初始化屏幕缓冲区)
+     * Bit 2: 是否在初始化完成后刷屏(以全刷显示)
+     */
+    bool init(uint8_t initOptions = 7);
+    /** @brief 初始化EMW3各个组件
+     *  @param initOptions 参数选项
+     * Bit 0: 是否初始化SD卡
+     * Bit 1: 是否在初始化完成后清屏(初始化屏幕缓冲区)
+     * Bit 2: 是否在初始化完成后刷屏(以全刷显示)
+     */
+    bool begin(uint8_t initOptions = 7){ return init(initOptions); }
     /**  @brief 刷屏
      *   @param part 0:无延时全刷    1:无延时快刷     2: 阻塞式全刷     3: 阻塞式快刷
      */
@@ -85,6 +102,7 @@ class EMW3 : public EinkDrv_213, public LGFX_Sprite {
   private:
     //for 250 * 122 sized buffer
     static unsigned char buff [4000];
+    bool sd_ok = 0;
 };
 extern uint8_t keyL,keyM,keyR;
 

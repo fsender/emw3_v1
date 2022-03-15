@@ -34,8 +34,8 @@ void EinkDrv_213 ::endTr(){
   SPI.endTransaction();
   _refreshing = 0;
 }
-void EinkDrv_213::init(bool initial, uint16_t reset_duration, bool pulldown_rst_mode){
-      EinkDriver::init(initial, reset_duration, pulldown_rst_mode);
+void EinkDrv_213::init_epd(bool initial, uint16_t reset_duration, bool pulldown_rst_mode){
+      EinkDriver::init_epd(initial, reset_duration, pulldown_rst_mode);
       _using_partial_mode = true;
       _current_page = 0;
       next_frame = 0;

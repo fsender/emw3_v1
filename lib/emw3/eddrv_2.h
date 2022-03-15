@@ -1,8 +1,11 @@
-/**
+/******* FRIENDSHIPENDER *****
  * @file eddrv_2.h
- * @author fsender
+ * @author FriendshipEnder
  * @brief 
  * @version 1.0
+ * 
+ * Update: 2022-3-13
+ * 重新封装了init()函数(初始化函数),现在用init_epd函数替代原init函数
  * 
  * Update: 2022-2-21
  * 大幅度精简了没有必要的函数定义, 包含一些没什么用的低功耗函数
@@ -36,7 +39,7 @@ typedef struct {
 class EinkDrv_213 : public EinkDriver{
   public:
     EinkDrv_213();
-    void init(bool initial = false, uint16_t reset_duration = 20, bool pulldown_rst_mode = false);
+    void init_epd(bool initial = false, uint16_t reset_duration = 20, bool pulldown_rst_mode = false);
     //void fill(uint16_t color); // 0x0 black, >0x0 white, to buffer
     // display buffer content to screen, useful for full screen buffer
     uint8_t _display(uint8_t partial_update_mode);
@@ -97,6 +100,9 @@ class EinkDrv_213 : public EinkDriver{
     const uint8_t * getLut(bool FullOrPart, uint8_t *size){
       *size = FullOrPart?_ed_lut_part_size:_ed_lut_full_size;
       return FullOrPart?_ed_lut_part:_ed_lut_full;
+    }
+    const uint8_t getLut(bool FullOrPart, uint8_t posit){
+      return FullOrPart?_ed_lut_part[posit]:_ed_lut_full[posit];
     }
   private:
     void _edbuff_w(uint8_t value);

@@ -28,7 +28,7 @@ EinkDriver::EinkDriver(int16_t busy_level, uint32_t busy_timeout,
   _reset_duration = 20;
 }
 
-void EinkDriver::init(bool initial, uint16_t reset_duration, bool pulldown_rst_mode){
+void EinkDriver::init_epd(bool initial, uint16_t reset_duration, bool pulldown_rst_mode){
   _init_stat = initial;
   _initial_refresh = initial;
   _pulldown_rst_mode = pulldown_rst_mode;

@@ -1,10 +1,15 @@
-/**
+/******* FRIENDSHIPENDER *****
  * @file eddrv_1.h
- * @author fsender
+ * @author FriendshipEnder
  * @brief 
  * @version 1.0
+ * 
+ * Update: 2022-3-13
+ * 重新封装了init()函数(初始化函数),现在用init_epd函数替代原init函数
+ * 
  * Update: 2022-2-21
  * 大幅度精简了没有必要的函数定义
+ * 
  * Update: 2021-11-27
  * 初次创建
  */
@@ -27,7 +32,7 @@ class EinkDriver{
     // constructor
     EinkDriver(int16_t busy_level, uint32_t busy_timeout,
                uint16_t w, uint16_t h, bool c, bool pu, bool fpu);
-    virtual void init(bool initial, uint16_t reset_duration = 20, bool pulldown_rst_mode = false);
+    virtual void init_epd(bool initial, uint16_t reset_duration = 20, bool pulldown_rst_mode = false);
 
   protected:
     void _reset();

@@ -1,6 +1,6 @@
-/**
+/******* FRIENDSHIPENDER *****
  * @file emw3.cpp
- * @author fsender (Bilibili FriendshipEnder) (Q:3253342798)
+ * @author FriendshipEnder (Bilibili FriendshipEnder) (Q:3253342798)
  * @brief  EMW3 基础驱动封装库
  * @version 1.0.4
  */
@@ -27,6 +27,20 @@ EMW3::EMW3(){
   keyM = EMW3_BtnM;
   keyR = EMW3_BtnR;
   ESP.wdtEnable(1000);
+}
+
+bool EMW3::init(uint8_t initOptions){
+  init_epd(false);
+  if(initOptions & 1) {
+    SDFS.setConfig(SDFSConfig(EMW3_SD_CS_PIN, SPI_HALF_SPEED));
+    sd_ok = SDFS.begin();
+  }
+  setCursor(0,0);
+  setFont(&cn_font);
+  setTextColor(0,1);
+  if(initOptions & 2) fillScreen(1);
+  if(initOptions & 4) display(2);
+  return sd_ok;
 }
 
 uint8_t EMW3::display(uint8_t part){ 
