@@ -1,4 +1,4 @@
-/**
+/******* FRIENDSHIPENDER *****
  * @file listMenuV2.cpp
  * @author fsender (Bilibili FriendshipEnder)
  * @brief 菜单显示程序,可以提供一个功能丰富的菜单功能,仅使用于EMW3
@@ -32,6 +32,14 @@ listMenuV2::~listMenuV2(){
 #endif
 }
 uint16_t listMenuV2::listMenu(int16_t x,int16_t y,uint8_t hlines,int16_t numitem,uint8_t settings,
+  const String *text, void ** interactions ){
+  const char **text_c_str = new const char * [numitem+1];
+  for(int i=0;i<=numitem;i++) text_c_str[i] = text[i].c_str();
+  uint16_t willReturn = listMenu(x,y,hlines,numitem,settings,text_c_str,interactions);
+  delete[] text_c_str;
+  return willReturn;
+}
+uint16_t listMenuV2::listMenu(int16_t x,int16_t y,uint8_t hlines,int16_t numitem,uint8_t settings,
   const char **text, void ** interactions ){
   //  Serial.println("LISTMENU FX");
   uint8_t long_pressed=0; //长按检测标签
@@ -47,21 +55,22 @@ uint16_t listMenuV2::listMenu(int16_t x,int16_t y,uint8_t hlines,int16_t numitem
   //hlines |= 1;
   int16_t h = height_max*hlines+title_height_max;
   uint8_t flipCombo = 0;  //新增自适应刷新速度功能,速度不同将使用不同的lut
+  uint8_t olddepth = in_tft->getLut(true,16);
   /* uint8_t enable_pgm = 0;
   if(settings&8) enable_pgm = 8;      //SD卡
   else if(settings&1) enable_pgm = 1; //pgm
   uint8_t dispbar = settings&4;       //显示右侧进度条
   */
-  const char *disp[32] = {nullptr};//文本内容
-  const char *disp_icon[32] = {nullptr};//图标内容
-  String dispspecial[32]={};
-  void *intera[32] = {nullptr};
+  const char *disp[MAX_XV_LINE] = {nullptr};//文本内容
+  const char *disp_icon[MAX_XV_LINE] = {nullptr};//图标内容
+  String dispspecial[MAX_XV_LINE]={};
+  void *intera[MAX_XV_LINE] = {nullptr};
   if(settings&1) {
     dispspecial[0] = FPSTR(text[0]);
     disp[0] = dispspecial[0].c_str();
   }
   else disp[0] = text[0];
-
+  in_tft->setAutoFullRefresh(0);
 //准备图标数据
   if(useGlobalIcon) disp_icon[0] = (const char *)globalIcon[0];
 #ifdef LMV2_USE_SD_BMP_SUPPORT
@@ -72,10 +81,14 @@ uint16_t listMenuV2::listMenu(int16_t x,int16_t y,uint8_t hlines,int16_t numitem
   if(settings&8) {
     if(settings&1) {
       dispspecial[1] = FPSTR(text[1]);
-      txtf = SD.open(dispspecial[1]);
+      txtf = emw3_cnt_fs->open(dispspecial[1],"r");
     }
-    else txtf = SD.open(text[1]);
-    if(!txtf) return 0;
+    else txtf = emw3_cnt_fs->open(text[1],"r");
+    if(!txtf) { //对应文件未打开, 文件损坏?
+      in_tft->setAutoFullRefresh(1);
+      setListMenuCallback(nullptr,nullptr);
+      return 0;
+    }
     else useDrawMulti = 0;  //使用SD卡文件时, 不能使用useDrawMulti
   }
 #endif
@@ -89,6 +102,8 @@ uint16_t listMenuV2::listMenu(int16_t x,int16_t y,uint8_t hlines,int16_t numitem
     listMenuGUI(x,y,width_max,hlines,settings,disp,nullptr,disp_icon);
     themeRect(themeNormal, x,y+height_max*(cursor-1)+title_height_max,width_max,height_max,0);
     in_tft->display(3);
+    in_tft->setAutoFullRefresh(1);
+    setListMenuCallback(nullptr,nullptr);
     while(in_tft->getBtn(keyM)==1) yield();
     delay(DEBOUNCE_DELAY_MS);
     while(in_tft->getBtn(keyM)==0) yield();
@@ -112,6 +127,7 @@ uint16_t listMenuV2::listMenu(int16_t x,int16_t y,uint8_t hlines,int16_t numitem
     if(cursor==2) disp[1] = msg;
     listMenuGUI(x,y,width_max,hlines,settings,disp,intera,disp_icon);
     themeRect(themeNormal, x,y+height_max*(cursor-1)+title_height_max,width_max,height_max,0);
+    if(listMenu_cb != nullptr) listMenu_cb(selected,userdata);  //调用回调函数
     in_tft->display(3);
     while(in_tft->getBtn(keyM)==1) yield();
     delay(DEBOUNCE_DELAY_MS);
@@ -123,12 +139,16 @@ uint16_t listMenuV2::listMenu(int16_t x,int16_t y,uint8_t hlines,int16_t numitem
       if(millis()-beginPress>LONGPRESS_DELAY_MS){
         drawKeyText(x+width_max/2,y+h/2);
         in_tft->display(3);
+        setListMenuCallback(nullptr,nullptr);
+        in_tft->setAutoFullRefresh(1);
         while(in_tft->getBtn(keyM)==0) yield();
         delay(DEBOUNCE_DELAY_MS);
         return 0;
       }
       yield();
     }
+    setListMenuCallback(nullptr,nullptr);
+    in_tft->setAutoFullRefresh(1);
     delay(DEBOUNCE_DELAY_MS);
     return 1;
   }
@@ -151,7 +171,7 @@ uint16_t listMenuV2::listMenu(int16_t x,int16_t y,uint8_t hlines,int16_t numitem
           else cursor2--;
         }
         refreshFlag=0;
-        if(flipCombo<0x0b) flipCombo++;  //新增自适应刷新速度功能
+        if(flipCombo<olddepth-3) flipCombo++;  //新增自适应刷新速度功能
       }
       else if(!in_tft->getBtn(keyR)){
         if(selected >= numitem) {
@@ -174,8 +194,17 @@ uint16_t listMenuV2::listMenu(int16_t x,int16_t y,uint8_t hlines,int16_t numitem
     }
     while(in_tft->getBtn(keyM)==0) {
       if(!beginPress) {
+        bool breakFlag = 0;
         beginPress=millis();
-        if(interactions != nullptr && interactions[selected] != nullptr && useDrawMulti){
+        while(in_tft->getBtn(keyM)==0) {
+          if(millis()-beginPress>LONGPRESS_DELAY_MS) {
+            breakFlag = 1;
+            break;
+          }
+          yield();
+        }
+        
+        if(interactions != nullptr && interactions[selected] != nullptr && useDrawMulti && !breakFlag){
           char readFrom;
           if(settings&1) readFrom = pgm_read_byte(text[selected]);
           else readFrom = text[selected][0];
@@ -191,7 +220,8 @@ uint16_t listMenuV2::listMenu(int16_t x,int16_t y,uint8_t hlines,int16_t numitem
           }
           else long_pressed = 1; //当 long_pressed == 1或2时退出循环,则 ListMenu 将退出并返回选定的值
         }
-        else long_pressed = 1;
+        else 
+          long_pressed = 1;
         delay(DEBOUNCE_DELAY_MS);
       }
       if(millis()-beginPress>LONGPRESS_DELAY_MS){
@@ -204,7 +234,26 @@ uint16_t listMenuV2::listMenu(int16_t x,int16_t y,uint8_t hlines,int16_t numitem
       }
       yield();
     }
-    if(long_pressed) break;
+    if(long_pressed) { /*
+      if(long_pressed == 1 && interactions != nullptr 
+        && interactions[selected] != nullptr && useDrawMulti){
+          char readFrom;
+          if(settings&1) readFrom = pgm_read_byte(text[selected]);
+          else readFrom = text[selected][0];
+          if(readFrom=='\x11') //如果text首字节为0x11, 则interaction为true时此选项不可选
+            long_pressed = !(*(const bool*)(interactions[selected]));//long_pressed == 1表示可被选择
+          else if(readFrom=='\x12') //如果text首字节为0x12, 则interaction为false时此选项不可选
+            long_pressed = (*(const bool*)(interactions[selected]));//long_pressed == 1表示可被选择
+          else if(readFrom=='\x10'){ //toggle按钮 此功能需要保证 interactions[selected] 可写入
+            (*(bool*)(interactions[selected])) = !(*(bool*)(interactions[selected])); //按下时候取反
+            long_pressed = 0;
+            refreshFlag = 0;
+            cursor_changed = 5;//下一帧更新画面
+          }
+          else break; //当 long_pressed == 1或2时退出循环,则 ListMenu 将退出并返回选定的值
+        }
+      else */ break;
+    }
     else if(beginPress){
         beginPress=0;
         delay(DEBOUNCE_DELAY_MS);
@@ -212,7 +261,7 @@ uint16_t listMenuV2::listMenu(int16_t x,int16_t y,uint8_t hlines,int16_t numitem
     }
     if(in_tft->getBtn(keyL) && in_tft->getBtn(keyR)) {
       if( flipCombo>5 ) {
-        in_tft->setLut(true,0x0e,16);
+        in_tft->setLut(true,olddepth,16);
         in_tft->display(7);
         in_tft->display(3);
       }
@@ -283,10 +332,10 @@ uint16_t listMenuV2::listMenu(int16_t x,int16_t y,uint8_t hlines,int16_t numitem
         }
       }
       themeRect(themeNormal, x,y+height_max*(cursor-1)+title_height_max,width_max,height_max,0);
-      refreshFlag = pressMillis+(0x0e - flipCombo)*18; //此处以接近屏幕刷新时间为宜,
+      refreshFlag = pressMillis+(olddepth - flipCombo)*18; //此处以接近屏幕刷新时间为宜,
+      if(listMenu_cb != nullptr) listMenu_cb(selected,userdata);  //调用回调函数
       //while(in_tft->epdBusy()) yield();
-      in_tft->setLut(true,0x0e - flipCombo,16);
-      Serial.println(0x0e - flipCombo);
+      in_tft->setLut(true,olddepth - flipCombo,16);
       in_tft->display(3);
       cursor_changed=0;
       if(initial){
@@ -301,6 +350,8 @@ uint16_t listMenuV2::listMenu(int16_t x,int16_t y,uint8_t hlines,int16_t numitem
 #ifdef LMV2_USE_SD_TXT_SUPPORT
   if(settings & 8) txtf.close();
 #endif
+  setListMenuCallback(nullptr,nullptr);
+  in_tft->setAutoFullRefresh(1);
   return selected;
 }
 
@@ -336,7 +387,9 @@ void listMenuV2::listMenuGUI(int16_t x,int16_t y, int16_t w, uint8_t hlines,uint
           else if(useGlobalSDIcon) {
             LGFX_Sprite bmp_spr(in_tft);
             bmp_spr.setColorDepth(1);
-            bmp_spr.createFromBmpFile(*emw3_cnt_fs,bmpsrc[0]);
+            if(bmpsrc[0][0]!='/') 
+              bmp_spr.createFromBmpFile(*emw3_cnt_fs,(String(_EMW3_ICON_PATH)+bmpsrc[0]).c_str());
+            else bmp_spr.createFromBmpFile(*emw3_cnt_fs,bmpsrc[0]);
             in_tft->drawBitmap(x+spr_offset_x,y+spr_offset_y,
             (const uint8_t *)bmp_spr.getBuffer(),bmp_spr.width(),bmp_spr.height(),
             title_Invert?(uint16_t)0:(uint16_t)1,title_Invert?(uint16_t)1:(uint16_t)0); //绘制标题图标
@@ -403,7 +456,9 @@ void listMenuV2::listMenuGUI(int16_t x,int16_t y, int16_t w, uint8_t hlines,uint
             in_tft->drawBitmap(drx,dry,iconDataCache[cached-1],16,16,1,0);
           }
           else{ //没有图标缓存
-            in_tft->drawBmpFile(*emw3_cnt_fs,bmpsrc[i],drx,dry);
+            if(bmpsrc[i][0] != '/') 
+              in_tft->drawBmpFile(*emw3_cnt_fs,(String(_EMW3_ICON_PATH) + bmpsrc[i]).c_str(),drx,dry);
+            else in_tft->drawBmpFile(*emw3_cnt_fs,bmpsrc[i],drx,dry);
             //创建图标缓存
             iconDataCacheLabel[cacheUsage&15] = bmpsrc[i];
             //Serial.printf("CACHING BMP FILE DATA, I=%d, CACHEUSAGE=%d\n\n",i,cacheUsage);
@@ -972,7 +1027,7 @@ uint8_t listMenuV2::setThemeFromFile(themeselection themesel, int16_t styleBmps,
     //Serial.print("OPEN FILE: ");
     //Serial.println(path);
     //Serial.print("EXISTS: ");
-    //Serial.println(SD.exists(path));
+    //Serial.println(SDFS.exists(path));
     spr.createFromBmpFile(Fs,path.c_str());  //从主题图片文件打开, 当styleBmps为3时,打开现有的图像
     //Serial.println("MIDSPRITE CREATE DONE\n");
     if(spr.getBuffer() == nullptr) return 2; //创建失败, 文件打开失败
@@ -1099,13 +1154,21 @@ uint8_t listMenuV2::setThemeFromFile(themeselection themesel, int16_t styleBmps,
   return 0;
 }
 #endif
-#endif
+#endif  
+
+uint8_t listMenuV2::drawDialog(const String *str,uint8_t dx,uint8_t dmultiw,uint8_t dmultih,int16_t x,int16_t y){
+  const char *text_c_str[5];
+  for(int i=0;i<5;i++) text_c_str[i] = str[i].c_str();
+  return drawDialog(text_c_str,dx&63,dmultiw,dmultih,x,y); //String时不支持内嵌图标数组
+}
+
 uint8_t listMenuV2::drawDialog(const char **str,uint8_t dx,uint8_t dmultiw,uint8_t dmultih,int16_t x,int16_t y){ //x, y为左上角坐标
   LGFX_Sprite dlgspr(in_tft),logospr(in_tft);
   int16_t fw, fh=0;
 
   int16_t fmaxw = in_tft->width() - 32;
   int16_t gBtnWid = 32; //按钮宽度,在自定义字符串时候将被设置为64
+  uint8_t retn = 0; //回车符号数
   const char *okText = CTG_CN_okText,
   *backText = CTG_CN_backText,
   *moreText = CTG_CN_moreText;
@@ -1119,11 +1182,18 @@ uint8_t listMenuV2::drawDialog(const char **str,uint8_t dx,uint8_t dmultiw,uint8
   fw = dmultiw;
   if(!fw) fw = dlgspr.textWidth(str[0]);
   else fh = dmultih;
-  if(!fh) fh = 16;
+  if(!fh) fh = 12;
+  for(size_t i=0;i<strlen(str[0]);i++) if(str[0][i] == '\n') retn++;
+  if(retn){
+    fh += 16 * retn;
+    fw = 16384;
+  }
 
   if(dx&96){
-    if(dx&32){ //显示sd卡上的图标文件
-      if(str[1][0]) logospr.createFromBmpFile(*emw3_cnt_fs,str[1]);
+    if((dx&32) && (!(dx&64))){ //显示sd卡上的图标文件
+      if(str[1][0] == '/') logospr.createFromBmpFile(*emw3_cnt_fs,str[1]);
+      else if(str[1][0]) logospr.createFromBmpFile(*emw3_cnt_fs,(String(_EMW3_DIALOG_PATH)+str[1]).c_str());
+      //Serial.println(String(_EMW3_DIALOG_PATH)+str[1]);
     }
     else if(dx&64){//显示数组的图标
       int16_t logosize = 16+((dx&32)>>1)+((dx&128)>>2); //图标数组大小
@@ -1143,9 +1213,9 @@ uint8_t listMenuV2::drawDialog(const char **str,uint8_t dx,uint8_t dmultiw,uint8
   }
   if(fw > fmaxw){
     fw = fmaxw;
-    if(fh < 36) fh = 36;
+    if(fh < 28) fh = 28;
   }
-  if(!dmultiw &&(dlgspr.textWidth(str[0])>=fmaxw + 8/*此处的 8 以半个字符的宽度为宜*/ || (dx&8)))
+  if(!dmultiw &&(dlgspr.textWidth(str[0])>=(fmaxw*2) + 8/*此处的 8 以半个字符的宽度为宜*/ || (dx&8)))
     fh = in_tft->height() - 32;
   dlgspr.setColorDepth(1);
 #ifdef LMV2_USE_DRAWMULYI_CANVAS_SUPPORT
@@ -1232,20 +1302,39 @@ uint8_t listMenuV2::drawDialog(const char **str,uint8_t dx,uint8_t dmultiw,uint8
   return got;
 }
 
+uint8_t listMenuV2::selectionList(uint8_t sel, const String* str, int16_t btnlen){
+  const char * text_c_str[10];
+  for(int i=0;i<LMV2_MIN(sel,10);i++) text_c_str[i] = str[i].c_str();
+  return selectionList(sel,text_c_str,btnlen);
+}
 uint8_t listMenuV2::selectionList(uint8_t sel, const char ** str, int16_t btnlen){
   uint8_t csel = (sel+1)>>1; //总共条目数
   int16_t drx = in_tft->width()>>1;
   int16_t dry = in_tft->height()>>1;
-  uint8_t cnt = 0;
-  if(csel>5) return 0;
+  uint8_t cnt = 0; //选中的值
+  if(csel>5) {
+    setSelectionListCallback(nullptr,nullptr);
+    return 0;
+  }
+  in_tft->setAutoFullRefresh(0);
+  if(!btnlen){
+    for(uint8_t i = 0;i<sel; i++){
+      if(btnlen<in_tft->textWidth(str[i])) btnlen = in_tft->textWidth(str[i]);
+    }
+    btnlen+=8;
+    if((btnlen<<1)+18>in_tft->width()) btnlen=(in_tft->width()>>1)-9; //防止宽度太大
+  }
   in_tft->fillRect(drx-btnlen-8,dry-11*csel-3,(btnlen<<1)+18,22*csel+6,1);
   themeRect(themeNormal,drx-btnlen-8,dry-11*csel-3,(btnlen<<1)+18,22*csel+6,0);
   for(;;){
     for(uint8_t i=0;i<sel;i++)
       drawKeyText(drx-btnlen/2-3+(i&1)*(btnlen+6),dry-11*(csel-(i&254))+11,str[i],btnlen,i==cnt?-20:20);
+    if(selectionList_cb != nullptr) selectionList_cb(cnt,userdata);  //调用回调函数
     in_tft->display(3);
     for(;;){
     if(in_tft->getBtn(keyM)==0) {
+  in_tft->setAutoFullRefresh(1);
+      setSelectionListCallback(nullptr,nullptr);
       while(in_tft->getBtn(keyM)==0) yield();
       delay(DEBOUNCE_DELAY_MS);
       return cnt;
@@ -1263,6 +1352,8 @@ uint8_t listMenuV2::selectionList(uint8_t sel, const char ** str, int16_t btnlen
     yield();
     }
   }
+  in_tft->setAutoFullRefresh(1);
+      setSelectionListCallback(nullptr,nullptr);
       return 0;
 }
 int32_t listMenuV2::slider(const char * str, int32_t minv, int32_t maxv, int32_t initialVal){
@@ -1273,6 +1364,7 @@ int32_t listMenuV2::slider(const char * str, int32_t minv, int32_t maxv, int32_t
   int16_t sprw=0, sprh=0, pry;
   workspr.setFont(&cn_font);
   workspr.setColorDepth(1);
+  in_tft->setAutoFullRefresh(0);
   if(str == nullptr || str[0] == 0) pry = (in_tft->height()>>1)-16;
   else if(workspr.textWidth(str)<=in_tft->width()-32) {
     pry = in_tft->height()>>1;
@@ -1293,7 +1385,7 @@ int32_t listMenuV2::slider(const char * str, int32_t minv, int32_t maxv, int32_t
     themeRect(themeNormal,(in_tft->width() - sprw-12)>>1,(in_tft->height()>>1)-32,
     workspr.width()+12,sprh+16); //先绘制框架
     workspr.pushSprite((in_tft->width() - sprw)>>1,(in_tft->height()>>1)-26);
-    in_tft->display(3);
+    //in_tft->display(3);
     workspr.deleteSprite();
     workspr.createSprite(LMV2_SLIDER_D_WIDTH,16);
     for(;;){// slider的控制代码
@@ -1302,6 +1394,8 @@ int32_t listMenuV2::slider(const char * str, int32_t minv, int32_t maxv, int32_t
         if(in_tft->getBtn(keyR) == 0) {
           drawKeyText(in_tft->width()>>1,in_tft->height()>>1,"取销操作",72,24);
           in_tft->display(3);
+          in_tft->setAutoFullRefresh(1);
+          setSliderCallback(nullptr,nullptr);
           while(in_tft->getBtn(keyL) == 0 || in_tft->getBtn(keyR) == 0) yield();
           delay(DEBOUNCE_DELAY_MS);
           return initialVal;
@@ -1335,6 +1429,7 @@ int32_t listMenuV2::slider(const char * str, int32_t minv, int32_t maxv, int32_t
         }
         themeRect(themeNormal,0,pry,in_tft->width(),32,0);
 
+        if(slider_cb != nullptr) slider_cb(iVal,userdata);  //调用回调函数
         in_tft->display(3);
         if(slideSpeed>=4) slideSpeed+=slideSpeed>>1;
         else slideSpeed++;
@@ -1342,6 +1437,8 @@ int32_t listMenuV2::slider(const char * str, int32_t minv, int32_t maxv, int32_t
       }
       else slideSpeed = 1;
       if(in_tft->getBtn(keyM) == 0){
+        in_tft->setAutoFullRefresh(1);
+        setSliderCallback(nullptr,nullptr);
         while(in_tft->getBtn(keyM) == 0) yield();
         delay(DEBOUNCE_DELAY_MS);
         return iVal;
@@ -1350,5 +1447,7 @@ int32_t listMenuV2::slider(const char * str, int32_t minv, int32_t maxv, int32_t
       yield();
     }
   }
+  in_tft->setAutoFullRefresh(1);
+  setSliderCallback(nullptr,nullptr);
   return 0;
 }

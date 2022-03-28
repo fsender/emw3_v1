@@ -1,8 +1,15 @@
-/******* FRIENDSHIPENDER *****
+/******* FRIENDSHIPENDER *******
  * @file emw3.h
  * @author FriendshipEnder
  * @brief EMW3 基础驱动封装库
- * @version 1.0.4
+ * @version Beta 1.0.2
+
+ * Update: 2022-3-29
+ * 开发工具包 1.0 版本正式发布
+ * 
+ * Update: 2022-3-26
+ * 增加getBtnAll函数, 一次可以读取更多按钮
+ * 
  * Update: 2022-3-13
  * 重新封装了init()函数(初始化函数),更方便使用,加入了功能相同的begin()函数
  * 
@@ -35,20 +42,29 @@
 #include <Arduino.h>
 #include <SPI.h>
 #include <FS.h>
-#include <SD.h>
+#include <SDFS.h>
+#include <LittleFS.h>
 #include "emw3_defines.h"
 #include "eddrv_2.h"
+#include "TimeLib.h" //时间库
 #define LGFX_USE_V1
 #include <LovyanGFX.hpp>
 #include <lgfx/v1/LGFX_Sprite.hpp>
 #include "gb2312.h"   //字体
 #include "osmall5_tf.h"   //字体
+#include "o_bold8.h"   //字体
 using namespace emw3_EinkDriver;
 //using namespace emw3epd;
+#ifdef DEBUG_DISPLAY_SERIAL
+#define SERIAL_REFRESH_TIME 300
+#endif
+#define NEED_FULL_UPDATE 20 //每20次局部刷新需要一次全局刷新
 
 const lgfx::U8g2font cn_font  ( chinese_city_gb2312  );
 const lgfx::U8g2font osmall5_font  ( ctg_u8g2_font_osmall5_tf  );
+const lgfx::U8g2font obold8_font (ctg_u8g2_font_o_bold8);
 
+extern uint8_t keyL,keyM,keyR;
 class EMW3 : public EinkDrv_213, public LGFX_Sprite {
   public:
     EMW3();
@@ -79,12 +95,16 @@ class EMW3 : public EinkDrv_213, public LGFX_Sprite {
      *  @return uint8_t 读到的电平值, 没按下为1, 按下为0
      */
     uint8_t getBtn(uint8_t btn);
+    /** @brief 读取所有按钮的电平值
+     *  @return uint8_t 读到的电平值, 全都没有按下为111, 全都按下为000, 只按下左键为011
+     */
+    inline uint8_t getBtnAll(){ return (getBtn(keyL)<<2) | (getBtn(keyM)<<1) | (getBtn(keyR)); }
     /**  @brief 检查屏幕是否还在刷屏
      *   @return uint8_t 0 可用, 1,正在刷新,为0时将会可用
      */
     inline uint8_t epdBusy(){ 
 #ifdef DEBUG_DISPLAY_SERIAL
-      return 0;
+      return millis() - lastRefresh <= SERIAL_REFRESH_TIME;
 #else
       return digitalRead(EMW3_EPD_BUSY_PIN);
 #endif
@@ -99,11 +119,25 @@ class EMW3 : public EinkDrv_213, public LGFX_Sprite {
      *  @param x 显示的x坐标
      *  @param y 显示的y坐标 */
     void push16bitSprite(LGFX_Sprite spr16bit, int x, int y);
+    /// @brief 获取电池电压
+    uint32_t getVoltage();
+    /// @brief 获取电池电压, 百分比
+    uint8_t getVoltagePercent();
+    /// @brief 设置是否自动全刷, 默认开启
+    void setAutoFullRefresh(bool af) { autoFullRefresh=af; }
+    /// @brief 获取是否开启了自动全刷
+    bool getAutoFullRefresh() { return autoFullRefresh; }
+    /// @brief 重置局部刷新计数器
+    void resetRefreshCombo() { refreshCombo = 0; }
   private:
     //for 250 * 122 sized buffer
     static unsigned char buff [4000];
-    bool sd_ok = 0;
+    bool sd_ok;
+    bool autoFullRefresh; 
+    uint8_t refreshCombo;
+#ifdef DEBUG_DISPLAY_SERIAL
+    uint32_t lastRefresh = 0;
+#endif
 };
-extern uint8_t keyL,keyM,keyR;
 
 #endif

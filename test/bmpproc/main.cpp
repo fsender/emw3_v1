@@ -80,7 +80,7 @@ void loop(){
     }
     else if(emw3.getBtn(keyR) == 0){
       if(emw3.getBtn(keyM) == 0) {
-        if(iy) changed = 1;
+        if(ix) changed = 1;
         ix+=48;
         if(ix>0) ix = 0;
       }

@@ -107,7 +107,7 @@ void setup(){
   //emw3.fillScreen(TFT_DARKCYAN);
   //emw3.drawBmpFile(SDFS,"/bmp/bb4.bmp",40,40);
   //Serial.println("load pic success1");
-  //emw3.drawBmpFile(SDFS,"/EMW3/sys/icon/Busy0.bmp",80,40);
+  //emw3.drawBmpFile(SDFS,"/EMW3/icon/Busy0.bmp",80,40);
   //Serial.println("load pic success2");
   //emw3.display(3);
   //delay(1000);
@@ -221,8 +221,8 @@ void loop(void)
   txtptr2[14] = drawmore14f ;
   txtptr2[15] = bmpAndDraw15f ;
   int res ;
-  const char *txtptr3[2]={
-    "从TXT文件导入数据标题","/txt/selec.txt"
+  const char *txtptr3[3]={
+    "从TXT文件导入数据标题","/txt/selec.txt","0"
   };
   emw3.fillScreen(0xffff);
   res = menu.listMenu(4,0,5,70,28,txtptr3);

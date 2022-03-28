@@ -1,15 +1,29 @@
-/**
+/******* FRIENDSHIPENDER *******
+ * 重新封装了init()函数(初始化函数),现在用init_epd函数替代原init函数
  * @file listMenuV2.h
  * @author fsender (Bilibili FriendshipEnder) (Q:3253342798)
  * @brief 菜单显示程序,可以提供一个功能丰富的菜单功能,仅使用于EMW3
- * @version beta 1.2
+ * @version Beta 1.0.14
+
+ * Update: 2022-3-29
+ * 开发工具包 1.0 版本正式发布
  * 
- * 即将更新
- * 浮动键盘
+ * update 2022-03-13
+ * 允许使用 const String * 类型作为参数使用此库中的函数
+ * 优化了drawDialog显示对话框的时候对多行文本的处理
+ * 加入了选项回调函数, 使用后自动释放
+ * 
+ * update 2022-03-07
+ * 修复图标缓存机制的bug,(图标缓存重复使用时导致花屏)
+ * 
+ * update 2022-02-28
+ * 即将更新 浮动键盘: 在EMW3Keyboard库中, 暂不开源
+ * 
  * update 2022-02-25
  * 窗口,对话框,滑动条
  * 增加菜单快速度跳转(同时按住左右键触发滑动条)
  * 修复了关于 drawMulti 中"\x01 - 对此条目绘制颜色反色" 不反色的bug
+ * 
  * update 2022-02-14
  * 增加图标数据缓存,减少读写SD卡的次数
  * 增加动态lut, 来实现加速滑动(原来需要 ~350ms, 目标 ~200ms)
@@ -17,6 +31,7 @@
  * 
  * update 2022-02-13
  * 修复了SD卡与刷屏互相干扰导致屏幕或者SD卡死机问题
+ * 
  * update 2022-02-03
  * 初次创建
  * @copyright Copyright (c) 2022 
@@ -26,7 +41,7 @@
 //注意事项: 使用PCtoLCD2002取模时,需要阴码+顺向+C51输出
 #include <Arduino.h>
 #include <FS.h>
-#include <SD.h>
+#include <SDFS.h>
 #define LGFX_USE_V1
 #include <LovyanGFX.hpp>
 #include "emw3.h"
@@ -37,8 +52,11 @@
 //#define LMV2_USE_THEME_SUPPORT //SD卡主题设置(未实现)
 #define LMV2_USE_SD_BMP_SUPPORT
 #define LMV2_USE_SD_TXT_SUPPORT
-#define _EMW3_ICON_PATH "/EMW3/sys/icon/"
-#define _EMW3_THEME_PATH "/EMW3/sys/theme/" // E:\EMW3\sys\theme/border1.bmp
+#define MAX_XV_LINE 8 //hlines支持的最大值
+
+#define _EMW3_ICON_PATH "/EMW3/icon/"
+#define _EMW3_THEME_PATH "/EMW3/theme/" // E:\EMW3\sys\theme/border1.bmp
+#define _EMW3_DIALOG_PATH "/EMW3/dialog/"
   //0 plain   常规文本
   //1 printf plain 支持 printf,只能带一个参数
   //2 可以反色
@@ -53,7 +71,7 @@ extern const lgfx::U8g2font cn_font;
 
 class listMenuV2{
   public:
-    listMenuV2(EMW3 *intft = nullptr) : in_tft(intft) { emw3_cnt_fs = &SDFS; }
+    listMenuV2(EMW3 *intft = nullptr) : in_tft(intft), emw3_cnt_fs(&SDFS) {}
     listMenuV2(EMW3 *intft, const char **text, void **interaction = nullptr);
     ~listMenuV2();
 /// @brief 设置每个选项的宽度/高度, 所有数据如果设为0即为使用默认值,标题高度设为1则禁用标题栏
@@ -113,7 +131,7 @@ enum themeselection{
  * bit 1 : 是否绘制标题栏 ,(形参会在内部更改) 0 绘制   1 不绘制
  * bit 2 : 是否显示模拟滑动指示条
  * bit 3 : 是否使用SD卡上的txt文件来显示内容
- * 如 bit 3 为1,则参数 text将会只读取text[0]作为标题, text[1]作为文件路径
+ * 如 bit 3 为1,则参数 text将会只读取text[0]作为标题, text[1]作为文件路径, text[2]表示从第几行开始读
  * 若此位为0且iconsfilepath不为nullptr 显示iconsfilepath对应的图标
  * 若此位为1且iconsfilepath不为nullptr 显示文件/文件夹图标
  * bit 4 : 滑动指示条宽度
@@ -125,6 +143,8 @@ enum themeselection{
  */
   uint16_t listMenu(int16_t x,int16_t y,uint8_t hlines,int16_t numitem,uint8_t settings,
     const char **text, void ** interactions = nullptr);
+  uint16_t listMenu(int16_t x,int16_t y,uint8_t hlines,int16_t numitem,uint8_t settings,
+    const String *text, void ** interactions = nullptr);
 /// @brief 内部调用, 绘制菜单的GUI
   void listMenuGUI(int16_t x,int16_t y,int16_t w,uint8_t hlines,uint8_t settings,
     const char **text, void ** interactions = nullptr, const char ** bmpsrc = nullptr);
@@ -132,8 +152,9 @@ enum themeselection{
   void themeRect(themeselection themesel, int16_t x,int16_t y,int16_t w,int16_t h,uint16_t color = 0);
 /// @brief 绘制填充圆角矩形,圆角半径固定为2, 只用于标题 (已经被 themeRect() 取代)
 //   void fillArcRect(int16_t x,int16_t y,int16_t w,int16_t h,uint16_t color);
-/// @brief 绘制返回对话框 注意是居中显示的
+/// @brief 绘制返回对话框 注意是居中显示的, 设置h为负的数则为黑色
   void drawKeyText(int16_t x,int16_t y,const char *_2ch = nullptr,int16_t w = 40,int16_t h = 24);
+inline bool getDrawMulti() { return (bool)useDrawMulti; }
 inline void setDrawMulti(bool en) { useDrawMulti = en; }
 #ifdef LMV2_USE_DRAWMULYI_CANVAS_SUPPORT
 /**
@@ -145,7 +166,7 @@ inline void setDrawMulti(bool en) { useDrawMulti = en; }
  * \x02: 后面是一个位图数据, 紧接着是位图x显示位置(1 byte), y显示位置(1 byte), 宽度(1 byte), 
  高度(1 byte), 然后是位图数据(高度一定小于等于16), 数据段以\xff结尾.
  * \x03: 后面是4字节, 标识绘制位置x和y以及宽度高度w和h, 然后是一个SD卡上的位图文件的路径, 只支持单色位图, 
- 若不以'/'开头则为相对路径(/EMW3/sys/icon), 否则为绝对路径, 数据段以\xff结尾.
+ 若不以'/'开头则为相对路径(/EMW3/icon), 否则为绝对路径, 数据段以\xff结尾.
  若以'\\'开头则为littleFS上的文件, (未实现)
  * \x04: 绘制点,后面跟着2个单字节参数,分别是x1,y1 无结尾
  * \x05: 绘制直线段,后面跟着4个单字节参数,分别是x1,y1,x2,y2 无结尾
@@ -243,10 +264,10 @@ inline void setDrawMulti(bool en) { useDrawMulti = en; }
  * Bit 6==1, 显示图标,图标数组,数据为str[1].默认尺寸16x16, 
  * 如果Bit 5==1则为32x32, 如果Bit 7==1则为48x48, 如果Bit 5和Bit 7==1则为64x64
  * @param dmultiw,dmultih 若非0,则用drawMulti渲染对话框, 此数值为渲染宽度 (不支持多行文本)
- * @return uint8_t 选中的值
+ * @return uint8_t 选中的值, 0 中间, 1 右边, 2 左边
  */
-  uint8_t drawDialog(const char **str,uint8_t dx,uint8_t dmultiw = 0,
-    uint8_t dmultih = 0,int16_t x=-32768,int16_t y=-32768);
+  uint8_t drawDialog(const char **str,uint8_t dx,uint8_t dmultiw = 0, uint8_t dmultih = 0,int16_t x=-32768,int16_t y=-32768);
+  uint8_t drawDialog(const String *str,uint8_t dx,uint8_t dmultiw = 0,uint8_t dmultih = 0,int16_t x=-32768,int16_t y=-32768);
 
 /**
  * @brief 设置 menu 的默认文件系统, 启动默认是SD卡文件系统
@@ -260,7 +281,8 @@ inline void setDrawMulti(bool en) { useDrawMulti = en; }
  * @param btnlen 选项按钮长度
  * @return 选择了的选项
  */
-  uint8_t selectionList(uint8_t sel, const char ** str, int16_t btnlen = 64);
+  uint8_t selectionList(uint8_t sel, const char ** str, int16_t btnlen = 0);
+  uint8_t selectionList(uint8_t sel, const String* str, int16_t btnlen = 0);
 
 #define LMV2_SLIDER_D_WIDTH 64
 /**
@@ -272,12 +294,29 @@ inline void setDrawMulti(bool en) { useDrawMulti = en; }
  */
   int32_t slider(const char * str, int32_t minv=0, int32_t maxv=100, int32_t initialVal=0);
 
-  //键盘输入函数, 未实现
+  //键盘输入函数, 已经实现, 在emw3Keyboard中
   //int32_t getKNum(int32_t initialVal = 0);
   //size_t getKString(char * srcstr, int32_t maxlen = 0);
   //size_t getKChinese(char * srcstr, int32_t maxlen = 0);
 
-
+/**  @brief 设置回调函数
+  void (*listMenu_cb)(uint16_t,void *);
+  void (*selectionList_cb)(uint8_t,void *);
+  void (*slider_cb)(int32_t,void *);
+ *   @param _listMenu_cb 回调函数名
+ */
+  inline void setListMenuCallback(void (*_listMenu_cb)(uint16_t,void *),void * _userdata){
+    listMenu_cb = _listMenu_cb;
+    userdata = _userdata;
+  }
+  inline void setSelectionListCallback(void (*_selectionList_cb)(uint8_t,void *),void * _userdata){
+    selectionList_cb = _selectionList_cb;
+    userdata = _userdata;
+  }
+  inline void setSliderCallback(void (*_slider_cb)(int32_t,void *),void * _userdata){
+    slider_cb = _slider_cb;
+    userdata = _userdata;
+  }
 
 
 
@@ -349,11 +388,15 @@ private:
   fs::File txtf;
 #endif
   //是否使用drawMulti解锁更多功能
-  uint16_t useDrawMulti = 0;
+  bool useDrawMulti = 0;
 #ifdef LMV2_USE_THEME_SUPPORT
   //theme 位图数据,应该,...
   LGFX_Sprite *styleData[8] = {nullptr};
   LGFX_Sprite *titleStyleData[8] = {nullptr};
 #endif
+  void (*listMenu_cb)(uint16_t,void *) = nullptr;
+  void (*selectionList_cb)(uint8_t,void *) = nullptr;
+  void (*slider_cb)(int32_t,void *) = nullptr;
+  void *userdata = nullptr;
 };
 #endif

@@ -7,7 +7,7 @@
 #include "emw3.h"
 #include <SPI.h>
 #include <FS.h>
-#include <SD.h>
+#include <SDFS.h>
 #include <LittleFS.h>
 #include "emw3_defines.h"
 #include "eddrv_2.h"
@@ -26,15 +26,22 @@ EMW3::EMW3(){
   keyL = EMW3_BtnL;
   keyM = EMW3_BtnM;
   keyR = EMW3_BtnR;
+  refreshCombo = 0;
+  autoFullRefresh = 1;
   ESP.wdtEnable(1000);
 }
 
 bool EMW3::init(uint8_t initOptions){
+  if(getVoltagePercent() == 0) ESP.deepSleep(ESP.deepSleepMax()); //没电了, 或者手动休眠继续睡眠状态, 保持RTC内容不变
   init_epd(false);
   if(initOptions & 1) {
     SDFS.setConfig(SDFSConfig(EMW3_SD_CS_PIN, SPI_HALF_SPEED));
     sd_ok = SDFS.begin();
+    SDFS.setTimeCallback(now); //使能文件写入时间设置
+    //LittleFS.begin();
   }
+  else sd_ok = 0;
+  if(!sd_ok) Serial.println("SD NOT AVAILABLE!!!");
   setCursor(0,0);
   setFont(&cn_font);
   setTextColor(0,1);
@@ -44,7 +51,6 @@ bool EMW3::init(uint8_t initOptions){
 }
 
 uint8_t EMW3::display(uint8_t part){ 
-      Serial.println("DISPLAY FX");
 #ifdef DEBUG_DISPLAY_SERIAL
       /*
       for(int i=6;i<128;i++){
@@ -56,6 +62,12 @@ uint8_t EMW3::display(uint8_t part){
       }
       return 0;
       */
+      if(part>=4 || epdBusy()) {
+        //Serial.println("DISPLAY FX BLOCKED");
+        return 1;
+      }
+      //Serial.println("DISPLAY FX");
+      lastRefresh = millis();
       char wp[64];
       wp[63] = '\0';
       for(int i=6;i<128;i++){
@@ -71,19 +83,32 @@ uint8_t EMW3::display(uint8_t part){
           //Serial.print(char('a'+pixelprint));
           wp[(j>>2)-1] = 'a'+pixelprint;
         }
-        Serial.println(wp);
+        //Serial.println(wp);
         yield();
       }
+      if(part>=2 && part <4) while(millis() - lastRefresh <= SERIAL_REFRESH_TIME) yield();
       return 0;
       
-#else
-      uint32_t tm = micros();
+#else 
+      //uint32_t tm = micros();
+#ifdef EMW3_DEV_VERSION
+      drawRect(246,118,4,4,1);
+      drawRect(247,119,2,2,0);
+#endif
+      if(part&1) {// 局刷模式, 一段时间后全刷
+        if(refreshCombo < 240) refreshCombo++;
+        if(refreshCombo>NEED_FULL_UPDATE && autoFullRefresh){
+          part &= 254; //强制全刷
+          refreshCombo = 0;
+        }
+      }
+      else refreshCombo=0;
       uint8_t res = _display(part); 
       if(part>=2) 
         while(digitalRead(EMW3_EPD_BUSY_PIN)==HIGH) ESP.wdtFeed();
-      Serial.print(F("TIME COST (US): "));
-      Serial.println(micros() - tm);
-      Serial.print('\n');
+      //Serial.print(F("TIME COST (US): "));
+      //Serial.println(micros() - tm);
+      //Serial.print('\n');
       return res;
 #endif
     }
@@ -132,7 +157,9 @@ uint8_t EMW3::getBtn(uint8_t btn){
   return readb;
 }
 void EMW3::push16bitSprite(LGFX_Sprite spr16bit, int x, int y){
-  for(int coloridx=0;coloridx<16;coloridx++){
+  fillRect(x,y,spr16bit.width(),spr16bit.height(),1);
+  display(7);
+  for(int coloridx=1;coloridx<16;coloridx++){
     setDepth(coloridx);
     for(int i=0;i<spr16bit.height();i++){
       for(int j=0;j<spr16bit.width();j++){
@@ -144,4 +171,29 @@ void EMW3::push16bitSprite(LGFX_Sprite spr16bit, int x, int y){
     display(3);
   }
 }
+uint32_t EMW3::getVoltage(){
+  pinMode(D4,OUTPUT);
+  uint32_t batv = 0;
+  for(int i=0;i<5;i++){
+    delay(10);
+    digitalWrite(D4,LOW);
+    delayMicroseconds(8);
+    batv += analogRead(A0);
+    digitalWrite(D4,HIGH);
+    //digitalWrite(D4,HIGH);
+  }
+  pinMode(D4,INPUT_PULLUP);
+  return batv*4300/5120;
+}
+uint8_t EMW3::getVoltagePercent(){
+  uint32_t gv = getVoltage();
+#ifdef EMW3APP_DEBUG
+  Serial.print("gv:");
+  Serial.println(gv);
+#endif
+  if(gv>4300 || gv<=2000) gv = 4300;
+  else if(gv<3400 && gv>2000) gv = 3400;
+  return map(gv,3400,4300,0,100);
+}
+
 uint8_t keyL,keyM,keyR;

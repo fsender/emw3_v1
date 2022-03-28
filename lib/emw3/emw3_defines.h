@@ -1,9 +1,13 @@
-/**
+/******* FRIENDSHIPENDER *******
  * @file emw3_defines.h
  * @author fsender (f_ender@163.com)
  * @brief provide emw3 brick pin definations.
  * 
- * @version 1.0.1 pre-release
+ * @version Beta 1.0.0
+
+ * Update: 2022-3-29
+ * 开发工具包 1.0 版本正式发布
+ * 
  * update: 2022-2-13
  * 新增: 串口模拟显示, 在电脑的串口助手上也能显示画面, 不会缩短屏幕寿命
  * 修改 DEBUG_DISPLAY_SERIAL即可
@@ -20,14 +24,14 @@
 
 #ifdef _BOARD_RELEASE
 //最新的硬件
-#define EMW3_SD_CS_PIN 0 //D3
-#define EMW3_EPD_CS_PIN 15 //D8
-#define EMW3_EPD_DC_PIN 5 //D1
-#define EMW3_EPD_RST_PIN -1 //reserved
-#define EMW3_EPD_BUSY_PIN 4 //D2
-#define EMW3_BtnL 5
-#define EMW3_BtnM 12
-#define EMW3_BtnR 2 //D4
+#define EMW3_SD_CS_PIN 0 //D3, SD卡的片选引脚
+#define EMW3_EPD_CS_PIN 15 //D8, 显示屏的片选引脚
+#define EMW3_EPD_DC_PIN 5 //D1, 显示屏的DC引脚
+#define EMW3_EPD_RST_PIN -1 //reserved 保留的重置引脚
+#define EMW3_EPD_BUSY_PIN 4 //D2 显示屏的Busy引脚
+#define EMW3_BtnL 5 //D1, 左键
+#define EMW3_BtnM 12 //中间键 D6引脚
+#define EMW3_BtnR 2 //D4 右键
 
 #define HARDWARE_NEED_SD_END 0
 #define REMIND_LED_PIN LED_BUILTIN

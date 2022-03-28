@@ -59,23 +59,25 @@ void bmpproc::drawBW(EMW3 &emw3, int x, int y, int w, int h){
   int minusy = y<0?map(0,y,y+h,0,height()):0;
   spr.createSprite(sprw,sprh);
 #ifdef FLOYD_STEINBERG_GRAYSCALE_ALG
-    int16_t floyd_tab[2][sprw];
+    int16_t *floyd_tab[2];
+    floyd_tab[0] = new int16_t [sprw];
+    floyd_tab[1] = new int16_t [sprw];
     for(int j=0;j<sprw;j++){ floyd_tab[0][j] = 0; floyd_tab[1][j] = 0; }
 #endif
     for(int i=0;i<sprh;i++){
       for(int j=0;j<sprw;j++){
         //Serial.printf("%02x ",getGray(map(j,0,emw3.width()-1,0,width()-1),map(i,0,emw3.height()-1,0,height()-1)));
 #ifdef FLOYD_STEINBERG_GRAYSCALE_ALG
-        int16_t flodelta = floyd_tab[i&1][j]+(int16_t)getGray(map(j,0,w+(x<0?x:0)-1,
-          minusx,width()-1),map(i,0,h+(y<0?y:0)-1,minusy,height()-1));//此步骤将会计算出当前像素到底显示什么颜色
+        int16_t flodelta = floyd_tab[i&1][j]+(int16_t)(getGray(map(j,0,w+(x<0?x:0)-1,
+          minusx,width()-1),map(i,0,h+(y<0?y:0)-1,minusy,height()-1))<<4);//此步骤将会计算出当前像素到底显示什么颜色
           
-        if(flodelta>=128) { spr.drawPixel(j,i,1); flodelta = - 255 + flodelta; }
+        if(flodelta>=2048) { spr.drawPixel(j,i,1); flodelta = - 4095 + flodelta; }
         //计算出读取到的颜色, 然后与128比较, 如果小于128, 显示黑色,否则显示白色
         else              { spr.drawPixel(j,i,0); }
         if(j!=sprw-1) { floyd_tab[i&1]   [j+1] += (flodelta*7)>>4; }
-        if(j)         { floyd_tab[!(i&1)][j-1] += (flodelta  )>>4; }
+        if(j)         { floyd_tab[!(i&1)][j-1] += (flodelta*3)>>4; }
                       { floyd_tab[!(i&1)][j  ] += (flodelta*5)>>4; }
-        if(j!=sprw-1) { floyd_tab[!(i&1)][j+1] += (flodelta*3)>>4; }
+        if(j!=sprw-1) { floyd_tab[!(i&1)][j+1] += (flodelta  )>>4; }
 #endif
 #ifdef BAYER_GRAYSCALE_ALG
         spr.drawPixel(j,i,bayer_tab[((j&7)<<3)|(i&7)]<(getGray(map(j,0,w+(x<0?x:0)-1,minusx,width()-1),map(i,0,h+(y<0?y:0)-1,minusy,height()-1))>>2));
@@ -86,6 +88,10 @@ void bmpproc::drawBW(EMW3 &emw3, int x, int y, int w, int h){
       for(int floi=0;floi<sprw;floi++) floyd_tab[i&1][floi]={0};
 #endif
     }
+#ifdef FLOYD_STEINBERG_GRAYSCALE_ALG
+    delete[] floyd_tab[0];
+    delete[] floyd_tab[1];
+#endif
   emw3.fillRect(x>0?x:0,y>0?y:0,sprw,sprh,1);
   spr.pushSprite((x>0?x:0),(y>0?y:0));
   emw3.display(7); //先全白刷屏
@@ -110,7 +116,5 @@ void bmpproc::draw16Gray(EMW3 &emw3, int x, int y, int w, int h, bool gamma_on){
         yield();
       }
     }
-  emw3.fillRect(x>0?x:0,y>0?y:0,sprw,sprh,1);
-  emw3.display(7);
   emw3.push16bitSprite(spr,(x>0?x:0),(y>0?y:0));
 }

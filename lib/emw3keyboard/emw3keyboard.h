@@ -1,8 +1,12 @@
-/**
- * @file emw3keyboard.h
+/******* FRIENDSHIPENDER *******
+ * @file emw3keyboard.h (即将开源)
  * @author fsender (Bilibili FriendshipEnder)
  * @brief 虚拟全键盘输入
- * @version 0.1
+ * 
+ * @version Beta 1.0.6
+
+ * Update: 2022-3-29
+ * 开发工具包 1.0 版本正式发布
  * 
  * update 2022-02-28
  * 初次加入
@@ -12,16 +16,15 @@
 
 #include <Arduino.h>
 #include <FS.h>
-#include <SD.h>
+#include <SDFS.h>
 #define LGFX_USE_V1
 #include <LovyanGFX.hpp>
 #include "emw3.h"
 #include "emw3_defines.h"
-#define DEBOUNCE_DELAY_MS 25
-#define LONGPRESS_DELAY_MS 500
+#define KeyDEBOUNCE_DELAY_MS 25
+#define KeyLONGPRESS_DELAY_MS 200
 #define KEYBOARD_MODULE_WIDTH 87
 #define KEYBOARD_MODULE_HEIGHT 58
-
 
 extern const lgfx::U8g2font cn_font;
 extern const lgfx::U8g2font osmall5_font;
@@ -42,7 +45,6 @@ class emw3Keyboard{
 
     /** @brief 同上,输入字符串, 返回输入的字符数
      * @param dest 显示缓冲区,输入的字符串将会临时显示在这里
-     * @return int 输入的字符数
      */
     unsigned int getstr(LGFX_Sprite dest, char * inString, unsigned int maxlen, 
     int x = 0, int y = 0, int destx = 0, int desty = 0, bool multiline = false);

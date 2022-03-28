@@ -3,8 +3,15 @@
  * @author friendshipEnder
  * @brief BMP图像解码, 只支持24位的位图( Windows画图默认格式 )
  * @version 0.1
+ * update: 2022-03-11
+ * 使用动态内存用于存放floyd算法的缓存,
+ * 而不是把变量放入 数组声明.
+ * update: 2022-03-09
+ * 可以使用Floyd-Steinberg抖动算法以二值方式显示灰度图
+ * update: 2022-03-08
+ * 可以使用Bayer抖动算法(6-Bit)以二值方式显示灰度图
  * update: 2022-03-07
- * 初次创建
+ * 初次创建, 支持16阶灰度慢速绘制
  */
 #ifndef BMP_PROC_H_FILE
 #define BMP_PROC_H_FILE
@@ -12,7 +19,7 @@
 #define FLOYD_STEINBERG_GRAYSCALE_ALG //使用Floyd-Steinberg的抖动算法
 #include <Arduino.h>
 #include <SPI.h>
-#include <SD.h>
+#include <SDFS.h>
 #include <LittleFS.h>
 #define LGFX_USE_V1
 #include <LovyanGFX.hpp>

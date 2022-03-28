@@ -16,10 +16,10 @@ uint32_t batdat = 0;
 
 extern const lgfx::U8g2font cn_font;
 extern const lgfx::U8g2font osmall5_font;
-const char icon1[] = "/EMW3/sys/icon/bmpf.bmp";
-const char icon2[] = "/EMW3/sys/icon/emw3_2.bmp";
-const char icon3[] = "/EMW3/sys/icon/keyboard.bmp";
-const char icon4[] = "/EMW3/sys/icon/wifi.bmp";
+const char icon1[] = "/EMW3/icon/bmpf.bmp";
+const char icon2[] = "/EMW3/icon/emw3_2.bmp";
+const char icon3[] = "/EMW3/icon/keyboard.bmp";
+const char icon4[] = "/EMW3/icon/wifi.bmp";
 const char *icons[] = {
   icon1,icon2,icon3,icon4,nullptr,icon4,icon1,icon3,icon2
 };

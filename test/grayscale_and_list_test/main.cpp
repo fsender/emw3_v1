@@ -11,8 +11,8 @@ EMW3 emw3;
 
 listMenuV2 menu(&emw3);
 const lgfx::U8g2font cn_font  ( chinese_city_gb2312  );
-const char icon1[] = "/EMW3/sys/icon/icon1.bmp";
-const char icon2[] = "/EMW3/sys/icon/icon2.bmp";
+const char icon1[] = "/EMW3/icon/icon1.bmp";
+const char icon2[] = "/EMW3/icon/icon2.bmp";
 const char *icons[] = {
   icon1,icon2,icon1,icon2,nullptr,icon2,icon1,icon2,icon1
 };

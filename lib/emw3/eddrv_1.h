@@ -1,8 +1,11 @@
-/******* FRIENDSHIPENDER *****
+/******* FRIENDSHIPENDER *******
  * @file eddrv_1.h
  * @author FriendshipEnder
  * @brief 
- * @version 1.0
+ * @version Beta 1.0.1
+
+ * Update: 2022-3-29
+ * 开发工具包 1.0 版本正式发布
  * 
  * Update: 2022-3-13
  * 重新封装了init()函数(初始化函数),现在用init_epd函数替代原init函数
