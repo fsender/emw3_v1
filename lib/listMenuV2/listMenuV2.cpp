@@ -11,36 +11,39 @@
 
 #define LMV2_MIN(x,y) ((x)<(y)?(x):(y)) //取最小值函数
 #define LMV2_MAX(x,y) ((x)>(y)?(x):(y)) //取最小值函数
+   String listMenuV2::dispspecial[MAX_XV_LINE] = {};
+/*
 listMenuV2::listMenuV2(EMW3 *intft, const char **text, void **interaction) : in_tft(intft) {
   emw3_cnt_fs = &SDFS; 
   if(text == nullptr) return;
-  _text = text;
-  if(interaction != nullptr) _intera = interaction;
-}
+  //_text = text;
+  //if(interaction != nullptr) _intera = interaction;
+} */
 listMenuV2::~listMenuV2(){
 #ifdef LMV2_USE_THEME_SUPPORT
   for(int i=0;i<8;i++)
     if(styleData[i] != nullptr) {
       styleData[i]->deleteSprite();
-      delete styleData[i];
+      delete []styleData[i];
     }
   for(int i=0;i<8;i++)
     if(titleStyleData[i] != nullptr) {
       titleStyleData[i]->deleteSprite();
-      delete titleStyleData[i];
+      delete []titleStyleData[i];
     }
 #endif
 }
-uint16_t listMenuV2::listMenu(int16_t x,int16_t y,uint8_t hlines,int16_t numitem,uint8_t settings,
-  const String *text, void ** interactions ){
+uint16_t listMenuV2::listMenu(int16_t x,int16_t y,uint8_t hlines,int16_t numitem,uint16_t selected,
+  uint8_t settings, const String *text, void ** interactions ){
   const char **text_c_str = new const char * [numitem+1];
   for(int i=0;i<=numitem;i++) text_c_str[i] = text[i].c_str();
-  uint16_t willReturn = listMenu(x,y,hlines,numitem,settings,text_c_str,interactions);
+  uint16_t willReturn = listMenu(x,y,hlines,numitem,selected,settings,text_c_str,interactions);
   delete[] text_c_str;
   return willReturn;
 }
-uint16_t listMenuV2::listMenu(int16_t x,int16_t y,uint8_t hlines,int16_t numitem,uint8_t settings,
-  const char **text, void ** interactions ){
+
+uint16_t listMenuV2::listMenu(int16_t x,int16_t y,uint8_t hlines,int16_t numitem,uint16_t selected,
+  uint8_t settings, const char **text, void ** interactions ){
   //  Serial.println("LISTMENU FX");
   uint8_t long_pressed=0; //长按检测标签
   uint8_t cursor_changed=0; //标记 cursor 是否改变过, 
@@ -49,7 +52,6 @@ uint16_t listMenuV2::listMenu(int16_t x,int16_t y,uint8_t hlines,int16_t numitem
   uint32_t refreshFlag = 0; //刷新检测
   uint32_t beginPress = 0; //标记开始按下 BtnM 的时间
   uint32_t pressMillis = 0; //标记开始按下 BtnL 或 BtnR 的时间
-  int16_t selected = 1;
   int16_t cursor = hlines>2?2:1; //光标在第几个的位置上,当 hlines>=3 时,cursor只能为 2 到 hlines-1之间.
   int16_t cursor2 = 0; //当光标在最上面时,正好选择的是第一个选项,则此数值为0
   //hlines |= 1;
@@ -63,9 +65,10 @@ uint16_t listMenuV2::listMenu(int16_t x,int16_t y,uint8_t hlines,int16_t numitem
   */
   const char *disp[MAX_XV_LINE] = {nullptr};//文本内容
   const char *disp_icon[MAX_XV_LINE] = {nullptr};//图标内容
-  String dispspecial[MAX_XV_LINE]={};
   void *intera[MAX_XV_LINE] = {nullptr};
-  if(settings&1) {
+  if(selected == 0) selected = 1;
+  if(selected>numitem) selected=numitem;
+  if(settings&1) {  //使用了pgm的字符串
     dispspecial[0] = FPSTR(text[0]);
     disp[0] = dispspecial[0].c_str();
   }
@@ -85,8 +88,7 @@ uint16_t listMenuV2::listMenu(int16_t x,int16_t y,uint8_t hlines,int16_t numitem
     }
     else txtf = emw3_cnt_fs->open(text[1],"r");
     if(!txtf) { //对应文件未打开, 文件损坏?
-      in_tft->setAutoFullRefresh(1);
-      setListMenuCallback(nullptr,nullptr);
+      end_listMenu_settings_impl(olddepth);
       return 0;
     }
     else useDrawMulti = 0;  //使用SD卡文件时, 不能使用useDrawMulti
@@ -99,11 +101,17 @@ uint16_t listMenuV2::listMenu(int16_t x,int16_t y,uint8_t hlines,int16_t numitem
   if(numitem==0){ //无条目
     const char msg[] = "\0370个选项";
     if(cursor==2) disp[1] = msg;
-    listMenuGUI(x,y,width_max,hlines,settings,disp,nullptr,disp_icon);
+    listMenu_impl_GUI(x,y,width_max,hlines,settings,disp,nullptr,disp_icon);
     themeRect(themeNormal, x,y+height_max*(cursor-1)+title_height_max,width_max,height_max,0);
+#ifdef LMV2_USE_LISTMENU_DEMO_MODE_SUPPORT
+    if(settings & 32){
+      end_listMenu_settings_impl(olddepth);
+      delay(DEBOUNCE_DELAY_MS);
+      return 1;
+    }
+#endif
     in_tft->display(3);
-    in_tft->setAutoFullRefresh(1);
-    setListMenuCallback(nullptr,nullptr);
+    end_listMenu_settings_impl(olddepth);
     while(in_tft->getBtn(keyM)==1) yield();
     delay(DEBOUNCE_DELAY_MS);
     while(in_tft->getBtn(keyM)==0) yield();
@@ -125,8 +133,21 @@ uint16_t listMenuV2::listMenu(int16_t x,int16_t y,uint8_t hlines,int16_t numitem
     else disp[cursor] = text[1];
     if(interactions != nullptr) intera[cursor] = interactions[1];
     if(cursor==2) disp[1] = msg;
-    listMenuGUI(x,y,width_max,hlines,settings,disp,intera,disp_icon);
+    for(uint8_t i=3;i<=hlines;i++) disp[i] = nullptr;
+    
+    if(useGlobalIcon>=2) disp_icon[hlines<=2?1:2] = (const char *)globalIcon[1]; //准备图标数据
+#ifdef LMV2_USE_SD_BMP_SUPPORT
+    else if(useGlobalSDIcon>=2) disp_icon[hlines<=2?1:2] = globalSDIcon[1];
+#endif
+    listMenu_impl_GUI(x,y,width_max,hlines,settings,disp,intera,disp_icon);
     themeRect(themeNormal, x,y+height_max*(cursor-1)+title_height_max,width_max,height_max,0);
+#ifdef LMV2_USE_LISTMENU_DEMO_MODE_SUPPORT
+    if(settings & 32){
+      end_listMenu_settings_impl(olddepth);
+      delay(DEBOUNCE_DELAY_MS);
+      return 1;
+    }
+#endif
     if(listMenu_cb != nullptr) listMenu_cb(selected,userdata);  //调用回调函数
     in_tft->display(3);
     while(in_tft->getBtn(keyM)==1) yield();
@@ -139,19 +160,26 @@ uint16_t listMenuV2::listMenu(int16_t x,int16_t y,uint8_t hlines,int16_t numitem
       if(millis()-beginPress>LONGPRESS_DELAY_MS){
         drawKeyText(x+width_max/2,y+h/2);
         in_tft->display(3);
-        setListMenuCallback(nullptr,nullptr);
-        in_tft->setAutoFullRefresh(1);
+        end_listMenu_settings_impl(olddepth);
         while(in_tft->getBtn(keyM)==0) yield();
         delay(DEBOUNCE_DELAY_MS);
         return 0;
       }
       yield();
     }
-    setListMenuCallback(nullptr,nullptr);
-    in_tft->setAutoFullRefresh(1);
+    end_listMenu_settings_impl(olddepth);
     delay(DEBOUNCE_DELAY_MS);
     return 1;
   }
+  cursor+=selected-1;
+  
+  if((cursor-hlines+(hlines>2))>0){
+    cursor2+=cursor-hlines+(hlines>2);
+    cursor=hlines-(hlines>2);
+  }
+#ifdef LMV2_USE_LISTMENU_DEMO_MODE_SUPPORT
+  if(settings&32) goto aaaa; //此功能必须使用
+#endif
   for(;;){
     //Serial.println("MAIN LOOP GOING!!\n");
     if((pressMillis = millis()) > refreshFlag){
@@ -189,7 +217,7 @@ uint16_t listMenuV2::listMenu(int16_t x,int16_t y,uint8_t hlines,int16_t numitem
           else cursor2++;
         }
         refreshFlag=0;
-        if(flipCombo<0x0b) flipCombo++;  //新增自适应刷新速度功能
+        if(flipCombo<olddepth-3) flipCombo++;  //新增自适应刷新速度功能
       }
     }
     while(in_tft->getBtn(keyM)==0) {
@@ -260,16 +288,19 @@ uint16_t listMenuV2::listMenu(int16_t x,int16_t y,uint8_t hlines,int16_t numitem
         continue;
     }
     if(in_tft->getBtn(keyL) && in_tft->getBtn(keyR)) {
-      if( flipCombo>5 ) {
-        in_tft->setLut(true,olddepth,16);
+      if( flipCombo>=5 ) {
+        in_tft->setDepth(olddepth);
         in_tft->display(7);
         in_tft->display(3);
       }
       flipCombo=0; 
     } //新增自适应刷新速度功能
     if((!refreshFlag) || initial){
+#ifdef LMV2_USE_LISTMENU_DEMO_MODE_SUPPORT
+aaaa:
+#endif
       char itemsFlag[16];
-      sprintf_P(itemsFlag,PSTR("\x1f%d个选项"),numitem);
+      sprintf_P(itemsFlag,PSTR("\037%d个选项"),numitem);
 #ifdef LMV2_USE_SD_TXT_SUPPORT
       if(settings&8){
         int nl=0;
@@ -321,7 +352,7 @@ uint16_t listMenuV2::listMenu(int16_t x,int16_t y,uint8_t hlines,int16_t numitem
       switch(cursor_changed) {
         case 1:  themeRect(themeNormal, x,y+height_max*cursor+title_height_max,width_max,height_max,1); break;
         case 2:  themeRect(themeNormal, x,y+height_max*(cursor-2)+title_height_max,width_max,height_max,1); break;
-        default: listMenuGUI(x,y,width_max,hlines,settings,disp,intera,disp_icon);
+        default: listMenu_impl_GUI(x,y,width_max,hlines,settings,disp,intera,disp_icon);
         if(settings&4){
           int barLength = hlines*(height_max*hlines+title_height_max-4)/(numitem+(hlines<3?0:2));
           if(barLength<1) barLength=1;
@@ -333,15 +364,27 @@ uint16_t listMenuV2::listMenu(int16_t x,int16_t y,uint8_t hlines,int16_t numitem
       }
       themeRect(themeNormal, x,y+height_max*(cursor-1)+title_height_max,width_max,height_max,0);
       refreshFlag = pressMillis+(olddepth - flipCombo)*18; //此处以接近屏幕刷新时间为宜,
-      if(listMenu_cb != nullptr) listMenu_cb(selected,userdata);  //调用回调函数
-      //while(in_tft->epdBusy()) yield();
-      in_tft->setLut(true,olddepth - flipCombo,16);
-      in_tft->display(3);
+#ifdef LMV2_USE_LISTMENU_DEMO_MODE_SUPPORT
+      if(!(settings&32)) {
+#endif
+        if(listMenu_cb != nullptr) listMenu_cb(selected,userdata);  //调用回调函数
+        //while(in_tft->epdBusy()) yield();
+        in_tft->setDepth(olddepth - flipCombo);
+        in_tft->display(3);
+#ifdef LMV2_USE_LISTMENU_DEMO_MODE_SUPPORT
+      }
+#endif
       cursor_changed=0;
       if(initial){
         settings |= 2; //之后不再绘制标题栏
         initial=0;
       }
+#ifdef LMV2_USE_LISTMENU_DEMO_MODE_SUPPORT
+      if(settings&32) {
+        end_listMenu_settings_impl(olddepth);
+        return 0;
+      }
+#endif
     }
     yield();
   }
@@ -350,14 +393,18 @@ uint16_t listMenuV2::listMenu(int16_t x,int16_t y,uint8_t hlines,int16_t numitem
 #ifdef LMV2_USE_SD_TXT_SUPPORT
   if(settings & 8) txtf.close();
 #endif
-  setListMenuCallback(nullptr,nullptr);
-  in_tft->setAutoFullRefresh(1);
+  end_listMenu_settings_impl(olddepth);
   return selected;
 }
-
-void listMenuV2::listMenuGUI(int16_t x,int16_t y, int16_t w, uint8_t hlines,uint8_t settings,
+void listMenuV2::end_listMenu_settings_impl(uint8_t d){
+  while(in_tft->epdBusy()) yield();
+    setListMenuCallback(nullptr,nullptr);
+    in_tft->setAutoFullRefresh(1);
+    in_tft->setDepth(d);
+}
+void listMenuV2::listMenu_impl_GUI(int16_t x,int16_t y, int16_t w, uint8_t hlines,uint8_t settings,
   const char **text, void ** interactions, const char ** bmpsrc ){
-  //  Serial.println("LISTMENUGUI FX\n");
+  //  Serial.println("listMenu_impl_GUI FX\n");
   //themeRect(x,y+20*(hlines/2+1),w,20,0);
   LGFX_Sprite printspr(in_tft);
   bool leftSpace = 0;  //有无图标空位
@@ -387,8 +434,13 @@ void listMenuV2::listMenuGUI(int16_t x,int16_t y, int16_t w, uint8_t hlines,uint
           else if(useGlobalSDIcon) {
             LGFX_Sprite bmp_spr(in_tft);
             bmp_spr.setColorDepth(1);
-            if(bmpsrc[0][0]!='/') 
-              bmp_spr.createFromBmpFile(*emw3_cnt_fs,(String(_EMW3_ICON_PATH)+bmpsrc[0]).c_str());
+            if(bmpsrc[0][0]!='/') {
+              char *a = new char[strlen(_EMW3_ICON_PATH)+strlen(bmpsrc[0])+1];
+              strcpy(a,_EMW3_ICON_PATH);
+              strcat(a,bmpsrc[0]);
+              bmp_spr.createFromBmpFile(*emw3_cnt_fs,a);
+              delete []a;
+            }
             else bmp_spr.createFromBmpFile(*emw3_cnt_fs,bmpsrc[0]);
             in_tft->drawBitmap(x+spr_offset_x,y+spr_offset_y,
             (const uint8_t *)bmp_spr.getBuffer(),bmp_spr.width(),bmp_spr.height(),
@@ -425,7 +477,7 @@ void listMenuV2::listMenuGUI(int16_t x,int16_t y, int16_t w, uint8_t hlines,uint
       if(text[i][0] == '\x1f'){
         printspr.createSprite(real_spr_width,real_spr_height);
         printspr.setTextDatum(middle_left);
-        printspr.setPaletteColor(0,0x0);
+        printspr.setPaletteColor(0,0);
         printspr.setPaletteColor(1,1);
         printspr.fillSprite(1);
         uint16_t twidth = printspr.textWidth(text[i]+1);
@@ -438,12 +490,12 @@ void listMenuV2::listMenuGUI(int16_t x,int16_t y, int16_t w, uint8_t hlines,uint
         int16_t drx=x+spr_offset_x, dry=y+(i-1)*height_max+title_height_max+spr_offset_y;
         leftSpace = 0; //重置 leftSpace (有无图标空位);
         if(bmpsrc[i]!=nullptr){
-          if(useGlobalIcon>i) {
+          if(useGlobalIcon>=i) {
             in_tft->drawBitmap(drx,dry,(const unsigned char *)bmpsrc[i],16,16,0);
             leftSpace=1;
           }
 #ifdef LMV2_USE_SD_BMP_SUPPORT
-          else if(useGlobalSDIcon>i) { //绘制图标
+          else if(useGlobalSDIcon>=i) { //绘制图标
           uint8_t cached = 0; //检测是否已缓存
           for(uint32_t j=0;j<LMV2_MIN(cacheUsage,16u);j++){
             if(iconDataCacheLabel[j]==bmpsrc[i]){
@@ -456,8 +508,13 @@ void listMenuV2::listMenuGUI(int16_t x,int16_t y, int16_t w, uint8_t hlines,uint
             in_tft->drawBitmap(drx,dry,iconDataCache[cached-1],16,16,1,0);
           }
           else{ //没有图标缓存
-            if(bmpsrc[i][0] != '/') 
-              in_tft->drawBmpFile(*emw3_cnt_fs,(String(_EMW3_ICON_PATH) + bmpsrc[i]).c_str(),drx,dry);
+            if(bmpsrc[i][0] != '/') {
+              char *a = new char[strlen(_EMW3_ICON_PATH)+strlen(bmpsrc[i])+1];
+              strcpy(a,_EMW3_ICON_PATH);
+              strcat(a,bmpsrc[i]);
+              in_tft->drawBmpFile(*emw3_cnt_fs,a,drx,dry);
+              delete []a;
+            }
             else in_tft->drawBmpFile(*emw3_cnt_fs,bmpsrc[i],drx,dry);
             //创建图标缓存
             iconDataCacheLabel[cacheUsage&15] = bmpsrc[i];
@@ -490,6 +547,7 @@ void listMenuV2::listMenuGUI(int16_t x,int16_t y, int16_t w, uint8_t hlines,uint
     }
   }
   if(settings&4) in_tft->drawRect(x+w+1,y,(settings&16)?4:8,height_max*hlines+title_height_max,0);
+  //printspr.deleteSprite(); //因为使用了静态方式, 所以需要及时删掉sprite
 }
 
 void listMenuV2::themeRect(themeselection themesel, int16_t x,int16_t y,int16_t w,int16_t h,uint16_t color){
@@ -991,6 +1049,7 @@ void listMenuV2::setIcon(uint16_t num,const uint8_t **bmps){
   globalSDIcon = nullptr;
 }
 void listMenuV2::setSDIcon(uint16_t num,const char **path){
+  clearSDIconCache();
   useGlobalIcon = 0;
   globalIcon = nullptr;
   useGlobalSDIcon = num;
@@ -1133,7 +1192,7 @@ uint8_t listMenuV2::setThemeFromFile(themeselection themesel, int16_t styleBmps,
       if(tsd[i]->getBuffer() == nullptr){ //设置失败了... 内存不足
         for(int j = 0; j<=i; j++) {
           tsd[j] ->deleteSprite();
-          delete tsd[j];
+          delete []tsd[j];
           tsd[j] = nullptr;
         }
         return 3; //内存不足
@@ -1312,11 +1371,14 @@ uint8_t listMenuV2::selectionList(uint8_t sel, const char ** str, int16_t btnlen
   int16_t drx = in_tft->width()>>1;
   int16_t dry = in_tft->height()>>1;
   uint8_t cnt = 0; //选中的值
+  while(in_tft->getBtn(keyM)==0) yield();
+  delay(DEBOUNCE_DELAY_MS);
   if(csel>5) {
     setSelectionListCallback(nullptr,nullptr);
     return 0;
   }
   in_tft->setAutoFullRefresh(0);
+  in_tft->setFont(&cn_font);
   if(!btnlen){
     for(uint8_t i = 0;i<sel; i++){
       if(btnlen<in_tft->textWidth(str[i])) btnlen = in_tft->textWidth(str[i]);
@@ -1365,6 +1427,8 @@ int32_t listMenuV2::slider(const char * str, int32_t minv, int32_t maxv, int32_t
   workspr.setFont(&cn_font);
   workspr.setColorDepth(1);
   in_tft->setAutoFullRefresh(0);
+  while(in_tft->getBtn(keyM)==0) yield();
+  delay(DEBOUNCE_DELAY_MS);
   if(str == nullptr || str[0] == 0) pry = (in_tft->height()>>1)-16;
   else if(workspr.textWidth(str)<=in_tft->width()-32) {
     pry = in_tft->height()>>1;

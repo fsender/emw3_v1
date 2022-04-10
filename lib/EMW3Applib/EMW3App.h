@@ -1,4 +1,4 @@
-/******* FRIENDSHIPENDER ******* ******* EMW3 Clock *******
+/******* FriendshipEnder ******* EMW3 Clock *******
  * @file EMW3App.h
  * @author FriendshipEnder
  * @brief 应用程序基础类,也包含一些系统设置功能, 毕竟系统设置也算是一个app,
@@ -57,10 +57,7 @@
      *                        只有此bit为1时候, 参数才可用
      * Byte3 保留
  * 
- * @version Beta 1.0.2
-
- * Update: 2022-3-29
- * 开发工具包 1.0 版本正式发布
+ * @version Beta 1.0
  * 
  * 未完善的API
  * 1 随时召唤状态栏
@@ -92,9 +89,9 @@
 #include <ArduinoJson.h>
 #include <pgmspace.h>
 #include <ESP8266WiFi.h>
-#include <FS.h>
 #include <SDFS.h>
-#include <ESP8266SDUpdater.h>
+#include <Updater.h>
+//#include <ESP8266SDUpdater.h>
 #include <LittleFS.h>
 #include <ESP_EEPROM.h>
 #include <TimeLib.h>
@@ -155,11 +152,11 @@ class EMW3App{
     /** @brief  初始化app库(用于加载程序等功能)
      *  @return 0:rtc内容无效, 1:正常初始化
      */
-    bool begin() {return init();}
+    bool begin(uint8_t _fast = 0) {return init(_fast);}
     /** @brief  初始化app库(用于加载程序等功能)
      *  @return 0:rtc内容无效, 1:正常初始化
      */
-    bool init();
+    bool init(uint8_t _fast = 0);
     /** @brief 加载程序中的user rtc memory中的 param 字段, 最多88块
      *  @return uint8_t 数据,长度256字节, 如果RTC内容不可信则返回0
      */
@@ -227,6 +224,8 @@ class EMW3App{
      */
     String getFullAppPath(uint8_t appID) {return String(F(EMW3APP_BASE_PATH))+getAppPath(appID); }
 
+    /// @brief 手动设置当前应用程序名称
+    void setAppNameManual(const char * nname) { appName = nname; };
     /// @brief 返回当前应用程序名称
     String getAppName() {return appName;}
     /// @brief 返回指定代号(包名)的应用程序名
@@ -251,9 +250,11 @@ class EMW3App{
 
     /** @brief 绘制状态栏, 有点像Mac风格... 此函数默认是阻塞函数,(允许读取按钮数据进入控制中心)
      *  @param part 绘制颜色, 0黑色, 1白色, 2只有右半边, 
-     *  4移动显示位置(仅用于时钟程序) , 8不缓存显示覆盖区,且不阻塞程序
+     *  4移动显示位置(仅用于时钟程序) , 8缓存显示覆盖区,且阻塞程序
      * */
     void drawStatusBar(uint8_t part);
+    /// @brief 此函数可用于进入设置页面
+    void settingPage();
     /// @brief 截屏到SD卡,可以在drawStatusBar状态下调用
     void screenshot(bool useSpriteCache = 0);
     /// @brief 清理截屏缓存(就是那个LGFX_Sprite)
@@ -279,7 +280,7 @@ class EMW3App{
     /// @brief 读取设置数据
     inline uint8_t getSetting(uint32_t got){ 
       if(EMW3APP_EPD_CONTRAST == got) return ((wl.emw3status>>8) & 7)+8;
-      return wl.emw3status & got; 
+      return !!(wl.emw3status & got); 
     }
     /// @brief 保存设置数据于EEPROM中,目标地址为0, EEPROM默认使用1KB数据存储
     void commitSettings();
@@ -293,7 +294,8 @@ class EMW3App{
     /** @brief 可以带参数进行定时深度睡眠, 手动按下reset将会导致时钟不准
      *  @param sleepTimeMs 时间,单位是毫秒. 尝试一个过大的时间可能会导致模块无法唤醒.
      * */
-    void deepSleep(unsigned int sleepTimeMs, const uint8_t *dat = nullptr, uint16_t len = 0);
+    void deepSleep(unsigned int sleepTimeMs, bool disp = 1, const uint8_t *dat = nullptr, uint16_t len = 0);
+    unsigned int getchs(char *ws,unsigned int wslen,const char * msg = nullptr);
 
   private:
     //在此存储基本设置
@@ -308,8 +310,6 @@ class EMW3App{
 
     /// @brief 初始化应用程序模块
     void initAppInfo_impl(uint32_t id);
-    /// @brief 此函数可用于进入设置页面
-    void settingPage();
     /// @brief 进入设置页面的辅助绘图函数
     void settingPageGUI(uint8_t cp);
     /// @brief 进入设置页面的快速辅助绘图函数
@@ -322,5 +322,6 @@ class EMW3App{
     /// @brief 回调函数
     friend void dispinfo_callback(uint16_t sel, void *param);
     String *allAppNames;
+    bool updateFromSD(String fileName);
 };
 #endif

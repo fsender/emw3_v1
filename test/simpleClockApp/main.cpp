@@ -2,8 +2,9 @@
  * @file main.cpp
  * @author FriendshipEnder
  * @brief EMW3基础示例程序
- * 此模块被设计为不适合经常频繁重启
- * @version 1.0
+ * 
+ * @version 1.0.0
+ * 正式发布SDK工具包
  */
 #include "emw3.h"
 #include "listMenuV2.h"
@@ -26,6 +27,7 @@ const char * weekchar[]={
 };
   char strg[24] = "";
 void setup(){
+  Serial.begin(115200);
   if(!emw3.begin()) Serial.println("SD NOT AVAILABLE!");
   app.init();//初始化模块
   Serial.print("app.getSettings():");
@@ -37,6 +39,7 @@ void setup(){
   Serial.print("app.loadParameter():");
   app.readParameter((uint8_t *)strg);
   Serial.println(strg);
+  emw3.drawString(strg,0,0);
   if(app.getAppID() == 0){
     strcpy(strg,"parameter EPDreader");
   }

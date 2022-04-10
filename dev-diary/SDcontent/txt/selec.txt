@@ -1,0 +1,77 @@
+选项1
+选项2
+选项3
+选项4
+选项1使用的外设
+WiFi 串口 SPI GPIO Dht11传感器
+ 无需按钮
+ 8
+启动
+1.首次启动时,
+可以开启一个WIFI 
+AP服务器或者串口,
+可用于收集附近WIFI,
+SSID 密码表单,
+以及心知天气城市与APIKey
+选项16
+同样,之后双击
+Reset键也能进入此模式
+可以添加多个WI
+FI存档,每个存档包含
+WIFI SSID,密码,城市,
+APIKey,  存入到SPIFFS中
+选项23
+前期将会使用快速update模式,
+进入系统后使用正常模式(慢)
+选项 26
+不断电就一直显示时间,
+期间要有睡眠模式
+每半小时更改一次小主题
+(镜像) 并更新时间与天气
+每天8:00和20:00更
+改大主题(背景颜色)
+每分钟更新数字使用
+ 局部刷新
+ s 35
+刚上电不太稳定
+所以要运行1分钟
+等到NTP获取到秒
+为00时才显示时间并进入休眠,
+同时预留好18秒刷新时间
+之后可以尝试10分钟校准一次时间,可以用自校准功能,
+每次进睡眠的毫秒数差异可以用标准时间与
+计算时间之差算出来(10分钟校准一次)
+调试时间周期很长
+所以可能难以很好的完成此功能
+ 46
+字母字体: 
+u8g2_font_Born2bSportyV2_tr
+数字字体 待定
+天气使用 字体
+暂时不更新
+自定义天气图像
+选项53
+选项54
+they fcsduihfn
+GET /562f25980001b1b106000338.jpg
+ HTTP/1.1
+Host    
+img.mukewang.com
+User-Agent    
+Mozilla/5.0 (Windows NT 10.0;
+ WOW64) AppleWebKit/537.36 
+ (KHTML, like Gecko) 
+ Chrome/51.0.2704.106 
+ Safari/537.36
+Accept    image/we
+bp,image/*,*/*;q=0.8
+Referer    http://www.imooc.com/
+第69行
+70行数据
+第71行
+第72行
+第73行
+Accept-Encoding
+    gzip, deflate, sdch
+Accept-Language
+    zh-CN,zh;q=0.8

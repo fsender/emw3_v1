@@ -1,4 +1,4 @@
-/******* FRIENDSHIPENDER *******
+/******* FRIENDSHIPENDER *****
  * @file wireless.h
  * @author FriendshipEnder
  * @brief 连接到WiFi
@@ -35,11 +35,9 @@
   }
   Serial.println(wifiList["w"][0]["s"].as<const char *>());
   Serial.println(wifiList["w"][0]["p"].as<const char *>());
- * @version Beta 1.0.2
 
- * Update: 2022-3-29
- * 开发工具包 1.0 版本正式发布
 
+ * @version 0.1
  * Update:  2022-03-13
  * 初次创建
  */
@@ -73,9 +71,10 @@ public:
    *  @return uint8_t 连接状态,0为成功, 1为关闭, 2为打开但未连接, 3:未发现WiFi, 4:主动退出WiFi连接
    */
   uint8_t connectToWiFi(bool auto_c = 1);
-  uint8_t connectToWiFi_direct(bool allowSearch = 1, String ssid = emptyString, String pswd = emptyString);
+  uint8_t connectToWiFi_direct(bool allowSearch = 1, const String &ssid = emptyString, const String &pswd = emptyString);
   uint8_t connectToWiFi_search();
   uint8_t connectToWiFi_scan();
+  /// @return 0 正常选择
   uint8_t connectToWiFi_man();
   uint8_t connectToWiFi_dis();
   //void autoSyncTimeNtp();
@@ -108,6 +107,8 @@ private:
   listMenuV2 * menu;
   fs::FS * wireless_fs;
   DynamicJsonDocument *wjsonDoc;
+  static String wl_ssid;
+  static String wl_psk;
     /** @brief 设置状态字, 通过Eeprom或者rtcUserMemory可以保留用于其他app
      * 见上面文件brief
      */ 

@@ -1,13 +1,18 @@
-/******* FRIENDSHIPENDER *******
+/******* FRIENDSHIPENDER *****
  * 重新封装了init()函数(初始化函数),现在用init_epd函数替代原init函数
  * @file listMenuV2.h
  * @author fsender (Bilibili FriendshipEnder) (Q:3253342798)
  * @brief 菜单显示程序,可以提供一个功能丰富的菜单功能,仅使用于EMW3
- * @version Beta 1.0.14
-
- * Update: 2022-3-29
- * 开发工具包 1.0 版本正式发布
+ * @version beta 1.3
  * 
+ * update 2022-04-07
+ * 1.现在可以为 listMenu 指定初始值了, API不再兼容, 就是指定一开始选项在哪里
+ * 2.新增listMenu的演示模式, 仅显示内容并且刷屏, 但不可以交互
+ * 此bit为1则仅显示GUI部分,显示选项等内容, 不能交互, 不能选择选项, 瞬间执行完
+ * ***** 注意: 此功能使用了 goto 语句, 如果不需要此功能, 建议关闭.*****
+ */
+#define LMV2_USE_LISTMENU_DEMO_MODE_SUPPORT
+/* 
  * update 2022-03-13
  * 允许使用 const String * 类型作为参数使用此库中的函数
  * 优化了drawDialog显示对话框的时候对多行文本的处理
@@ -40,7 +45,6 @@
 #define _LISTMENU_V2_H
 //注意事项: 使用PCtoLCD2002取模时,需要阴码+顺向+C51输出
 #include <Arduino.h>
-#include <FS.h>
 #include <SDFS.h>
 #define LGFX_USE_V1
 #include <LovyanGFX.hpp>
@@ -48,6 +52,7 @@
 #include "emw3_defines.h"
 #include "gb2312.h"
 //功能支持
+//#define LMV2_USE_PROGMEM_SUPPORT
 #define LMV2_USE_DRAWMULYI_CANVAS_SUPPORT
 //#define LMV2_USE_THEME_SUPPORT //SD卡主题设置(未实现)
 #define LMV2_USE_SD_BMP_SUPPORT
@@ -72,7 +77,6 @@ extern const lgfx::U8g2font cn_font;
 class listMenuV2{
   public:
     listMenuV2(EMW3 *intft = nullptr) : in_tft(intft), emw3_cnt_fs(&SDFS) {}
-    listMenuV2(EMW3 *intft, const char **text, void **interaction = nullptr);
     ~listMenuV2();
 /// @brief 设置每个选项的宽度/高度, 所有数据如果设为0即为使用默认值,标题高度设为1则禁用标题栏
     void setSize(const int16_t * sizedata); 
@@ -125,7 +129,8 @@ enum themeselection{
  * @param x 显示坐标X
  * @param y 显示坐标Y
  * @param hlines 菜单行数,不含标题行
- * @param selections 菜单选项数
+ * @param selections 菜单选项数, 不含标题选项
+ * @param init_pos 初始位置, 默认是 0
  * @param settings 菜单设置
  * bit 0 : 是否对 text 使用 progmem
  * bit 1 : 是否绘制标题栏 ,(形参会在内部更改) 0 绘制   1 不绘制
@@ -135,18 +140,19 @@ enum themeselection{
  * 若此位为0且iconsfilepath不为nullptr 显示iconsfilepath对应的图标
  * 若此位为1且iconsfilepath不为nullptr 显示文件/文件夹图标
  * bit 4 : 滑动指示条宽度
+ * bit 5 : 此bit为1则仅显示GUI部分,显示选项等内容, 不能交互, 不能选择选项, 瞬间执行完
+ * 注意: 此功能必须使用 goto 语句, 如果不需要, 可以关闭.
  * 
- * @param title 菜单标题
- * @param text 每一行的内容 支持 drawMulti 函数的 单行内容指令 详见 drawMulti 函数
+ * @param text 每一行的内容 支持 drawMulti 函数的 单行内容指令 详见 drawMulti 函数, 第一行为title
  * @param interactions 交互选项, 规则比较复杂
  * @return uint16_t 选择的条目编号, 1为第一条消息, 0为退出
  */
-  uint16_t listMenu(int16_t x,int16_t y,uint8_t hlines,int16_t numitem,uint8_t settings,
-    const char **text, void ** interactions = nullptr);
-  uint16_t listMenu(int16_t x,int16_t y,uint8_t hlines,int16_t numitem,uint8_t settings,
-    const String *text, void ** interactions = nullptr);
+  uint16_t listMenu(int16_t x,int16_t y,uint8_t hlines,int16_t numitem, uint16_t selected,
+    uint8_t settings, const char **text, void ** interactions = nullptr);
+  uint16_t listMenu(int16_t x,int16_t y,uint8_t hlines,int16_t numitem, uint16_t selected,
+    uint8_t settings, const String *text, void ** interactions = nullptr);
 /// @brief 内部调用, 绘制菜单的GUI
-  void listMenuGUI(int16_t x,int16_t y,int16_t w,uint8_t hlines,uint8_t settings,
+  void listMenu_impl_GUI(int16_t x,int16_t y,int16_t w,uint8_t hlines,uint8_t settings,
     const char **text, void ** interactions = nullptr, const char ** bmpsrc = nullptr);
 /// @brief 绘制圆角矩形,圆角半径固定为2
   void themeRect(themeselection themesel, int16_t x,int16_t y,int16_t w,int16_t h,uint16_t color = 0);
@@ -241,6 +247,9 @@ inline void setDrawMulti(bool en) { useDrawMulti = en; }
       @param num 为设置的图标个数, 0为禁用图标库
   */
   void setSDIcon(uint16_t num,const char **path);
+  void clearSDIconCache() {
+    for(uint8_t i=0;i<16;i++) iconDataCacheLabel[i]=nullptr; //字典索引
+  }
 #endif
 
 //适用于多语言情况
@@ -317,8 +326,21 @@ inline void setDrawMulti(bool en) { useDrawMulti = en; }
     slider_cb = _slider_cb;
     userdata = _userdata;
   }
+  inline void drawList(const char *ch1,const char *ch2 = nullptr,
+      const char *ch3 = nullptr,const char *ch4 = nullptr){
+    drawListBtn(0,ch1,ch2,ch3,ch4);
+  }
 
-
+  inline uint8_t drawListBtn(uint8_t btns, const char *ch1, const char *ch2 = nullptr,
+      const char *ch3 = nullptr,const char *ch4 = nullptr){
+    String ch_f = String(ch1);
+    if(ch2 != nullptr) ch_f += String('\n') + String(ch2);
+    if(ch3 != nullptr) ch_f += String('\n') + String(ch3);
+    if(ch4 != nullptr) ch_f += String('\n') + String(ch4);
+    uint8_t wr = drawDialog(&ch_f,btns);
+    if(!btns) in_tft->display(3);
+    return wr;
+  }
 
 
 
@@ -330,8 +352,8 @@ inline void setDrawMulti(bool en) { useDrawMulti = en; }
 private:
   EMW3 * in_tft;
   fs::FS * emw3_cnt_fs;
-  const char ** _text = nullptr;
-  void ** _intera = nullptr;
+  //const char ** _text = nullptr;
+  //void ** _intera = nullptr;
 /*!
 未被选中的选项
   |<---- width_max is the maximum of this width ---->|  这是 width_max 指定的宽度
@@ -398,5 +420,7 @@ private:
   void (*selectionList_cb)(uint8_t,void *) = nullptr;
   void (*slider_cb)(int32_t,void *) = nullptr;
   void *userdata = nullptr;
+  void end_listMenu_settings_impl(uint8_t d);
+  static String dispspecial[MAX_XV_LINE];
 };
 #endif

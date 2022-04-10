@@ -42,5 +42,4 @@ lib/WifiEspNow
 *.exe
 *.out
 *.app
-*.bin
 *.hex

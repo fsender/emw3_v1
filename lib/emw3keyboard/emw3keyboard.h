@@ -1,12 +1,8 @@
-/******* FRIENDSHIPENDER *******
- * @file emw3keyboard.h (即将开源)
+/**
+ * @file emw3keyboard.h
  * @author fsender (Bilibili FriendshipEnder)
  * @brief 虚拟全键盘输入
- * 
- * @version Beta 1.0.6
-
- * Update: 2022-3-29
- * 开发工具包 1.0 版本正式发布
+ * @version 0.1
  * 
  * update 2022-02-28
  * 初次加入
@@ -15,7 +11,6 @@
 #define Emw3keyboard_H_FILE
 
 #include <Arduino.h>
-#include <FS.h>
 #include <SDFS.h>
 #define LGFX_USE_V1
 #include <LovyanGFX.hpp>

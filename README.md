@@ -1,6 +1,8 @@
-# emw3_v1 1.0 版本 SDK 开发包正式发布
-我的EMW3时钟的第一版 V1.0 SDK
+# emw3_v1 1.1 版本 SDK 开发包正式发布
+我的EMW3时钟的第一版 V1.1 SDK
 **需要依赖的库: LovyanGFX**
+b站链接: 记得三连后观看
+https://www.bilibili.com/video/BV1yr4y1p7as/
 
 B站点赞数 >200 且硬币数 >60 开源 emw3Keyboard 库
 
@@ -13,3 +15,5 @@ B站点赞数 >1000 且硬币数 >300 开源 emw3App 核心库
 完整示例程序和开发文档将在B站点赞数 >2000 且硬币数 >600 时放出
 
 Version 1 Release of my EMW3 Clock. The one before is just for debug build abd used with old libraries.
+
+暂时没有适配 Arduino IDE 开发平台.

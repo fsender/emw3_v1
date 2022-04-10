@@ -6,7 +6,6 @@
  */
 #include "emw3.h"
 #include <SPI.h>
-#include <FS.h>
 #include <SDFS.h>
 #include <LittleFS.h>
 #include "emw3_defines.h"
@@ -39,9 +38,9 @@ bool EMW3::init(uint8_t initOptions){
     sd_ok = SDFS.begin();
     SDFS.setTimeCallback(now); //使能文件写入时间设置
     //LittleFS.begin();
+    if(!sd_ok) Serial.println("SD NOT AVAILABLE!!!");
   }
   else sd_ok = 0;
-  if(!sd_ok) Serial.println("SD NOT AVAILABLE!!!");
   setCursor(0,0);
   setFont(&cn_font);
   setTextColor(0,1);
@@ -158,7 +157,7 @@ uint8_t EMW3::getBtn(uint8_t btn){
 }
 void EMW3::push16bitSprite(LGFX_Sprite spr16bit, int x, int y){
   fillRect(x,y,spr16bit.width(),spr16bit.height(),1);
-  display(7);
+  display(6);
   for(int coloridx=1;coloridx<16;coloridx++){
     setDepth(coloridx);
     for(int i=0;i<spr16bit.height();i++){

@@ -1,13 +1,9 @@
-/******* FRIENDSHIPENDER *******
+/**
  * @file emw3_defines.h
  * @author fsender (f_ender@163.com)
  * @brief provide emw3 brick pin definations.
  * 
- * @version Beta 1.0.0
-
- * Update: 2022-3-29
- * 开发工具包 1.0 版本正式发布
- * 
+ * @version 1.0.1 pre-release
  * update: 2022-2-13
  * 新增: 串口模拟显示, 在电脑的串口助手上也能显示画面, 不会缩短屏幕寿命
  * 修改 DEBUG_DISPLAY_SERIAL即可

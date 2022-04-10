@@ -1,12 +1,8 @@
-/******* FRIENDSHIPENDER *******
+/******* FRIENDSHIPENDER *****
  * @file emw3.h
  * @author FriendshipEnder
  * @brief EMW3 基础驱动封装库
- * @version Beta 1.0.2
-
- * Update: 2022-3-29
- * 开发工具包 1.0 版本正式发布
- * 
+ * @version 1.1
  * Update: 2022-3-26
  * 增加getBtnAll函数, 一次可以读取更多按钮
  * 
@@ -41,7 +37,6 @@
 
 #include <Arduino.h>
 #include <SPI.h>
-#include <FS.h>
 #include <SDFS.h>
 #include <LittleFS.h>
 #include "emw3_defines.h"
