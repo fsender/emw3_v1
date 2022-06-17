@@ -55,10 +55,11 @@ using namespace emw3_EinkDriver;
 #endif
 #define NEED_FULL_UPDATE 20 //每20次局部刷新需要一次全局刷新
 
-const lgfx::U8g2font cn_font  ( chinese_city_gb2312  );
-const lgfx::U8g2font osmall5_font  ( ctg_u8g2_font_osmall5_tf  );
-const lgfx::U8g2font obold8_font (ctg_u8g2_font_o_bold8);
+const lgfx::U8g2font cn_font  ( chinese_city_gb2312  );          // 中文字体
+const lgfx::U8g2font osmall5_font  ( ctg_u8g2_font_osmall5_tf ); // 3x5像素超小字体
+const lgfx::U8g2font obold8_font (ctg_u8g2_font_o_bold8);        // 5x8像素超粗字体
 
+//按键定义, 使用我一般不用的全局变量
 extern uint8_t keyL,keyM,keyR;
 class EMW3 : public EinkDrv_213, public LGFX_Sprite {
   public:
@@ -77,15 +78,18 @@ class EMW3 : public EinkDrv_213, public LGFX_Sprite {
      * Bit 2: 是否在初始化完成后刷屏(以全刷显示)
      */
     bool begin(uint8_t initOptions = 7){ return init(initOptions); }
-    /**  @brief 刷屏
+    /**  @brief 刷屏, 如果屏幕忙会直接跳过
      *   @param part 0:无延时全刷    1:无延时快刷     2: 阻塞式全刷     3: 阻塞式快刷
+     *   @return 0:显示成功   1: 刷屏失败
      */
     uint8_t display(uint8_t part = 1) ;
     /**  @brief 设置旋转方向
+     *   @note  注意: 尽量不要使用 setRotation 函数, 会出现按键问题
      *   @param rot 0-3: 旋转, 4-7: 镜像+旋转
      */
     void rotation(int rot);
     /** @brief 读取按钮的电平值
+     *  @note  注意: 尽量不要使用 digitalRead 函数, 会出现SPI干扰问题
      *  @param btn 按钮代号
      *  @return uint8_t 读到的电平值, 没按下为1, 按下为0
      */
@@ -104,7 +108,7 @@ class EMW3 : public EinkDrv_213, public LGFX_Sprite {
       return digitalRead(EMW3_EPD_BUSY_PIN);
 #endif
     }
-    /** @brief 设置是否在刷屏时启用中断(自动进行)
+    /** @brief 设置是否在刷屏时启用中断(自动进行), 默认禁用
      *  @param en 
      */
     inline void setInterruptDisplay(bool en = 1) { interruptDisplay = en; _refreshing = 0; }

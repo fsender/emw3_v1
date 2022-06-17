@@ -57,21 +57,23 @@
      *                        只有此bit为1时候, 参数才可用
      * Byte3 保留
  * 
- * @version Beta 1.0
+ * @version Beta 1.1
  * 
  * 未完善的API
- * 1 随时召唤状态栏
- * 2 状态栏显示的WiFi为正常表示状态, 而不是始终显示在屏幕上
- * 3 可以截屏
- * 4 app可以查看预览图
- * 5 允许快捷跳转app, (带参数)
+ * √ 1 随时召唤状态栏
+ * √ 2 状态栏显示的WiFi为正常表示状态, 而不是始终显示在屏幕上
+ * √ 3 可以截屏
+ * √ 4 app可以查看预览图
+ * √ 5 允许快捷跳转app, (带参数)
  * 6 message 功能:尽量完善
  * 7 热点功能:尽量完善, 可在应用内选择 是否开启服务器
- * 8 更多设置
- * 目标: 尽量把部分app库的非必须 API 做成可选的, 用define 指令控制
- * 问题: 极度依赖SD卡
- * 未来将会尝试无卡也可以运行
+ * √ 8 更多设置
+ * √ 目标: 尽量把部分app库的非必须 API 做成可选的, 用define 指令控制
+ * 问题: 极度依赖SD卡, 未来将会尝试无卡也可以运行
  * 
+ * Update: 2022-04-24
+ * 3.进入控制中心, 显示日期.
+   4.不允许自己加载自己, 如果想自己加载自己, 则重启.
  * Update: 2022-03-27
  * 增加 deepSleep函数, 可以方便的实现deepsleep功能
  * Update: 2022-03-27
@@ -85,6 +87,45 @@
  */
 #ifndef _EMW3_APP_H_FILE
 #define _EMW3_APP_H_FILE
+
+#define EMW3APP_ENABLE_WIFI    //是否启用WiFi功能
+//#define EMW3APP_ENABLE_MESSAGE //是否启用系统消息功能, 启用后可以自动接收消息
+#define EMW3APP_BASE_PATH         "/EMW3/app/"              //应用默认路径
+#define EMW3APP_BASE_LIST_PATH    "/EMW3/app/apps.txt"      //应用路径列表
+//#define EMW3APP_BASE_NAME_PATH  "/EMW3/app/appnames.txt"  //应用名称列表
+#define EMW3APP_CONTROL_BMPPATH   "/EMW3/theme/control.bmp" //控制台贴图路径
+#define EMW3APP_INFO_PATH         "/EMW3/theme/info.bmp"    //控制台贴图路径
+#define RTC_CheckSum1             3253342798ul              //RTC校验码
+#define EEPROM_CheckSum           WIRELESS_EEPROM_CheckSum  //EEPROM校验码
+#define INITIAL_SETTINGCONFIG     0x0000670eul              //默认设置
+#define EMW3APP_MAX_APPS          40                        //最大可安装app数
+#define EMW3APP_RTC_PARAM         0x60000                   //参数可用性校验
+#define WIRELESS_EEPROM_CheckSum  180327370ul                 //EEPROM校验码
+
+//#define EMW3APP_DEBUG                                       //开启debug模式
+
+#define EMW3APP_WIFI_STA           (1)
+#define EMW3APP_AUTO_CONNECT       (2)
+#define EMW3APP_AUTO_RECONNECT     (4)
+#define EMW3APP_WIFI_PERSISTENT    (8)
+#define EMW3APP_WIFI_AP            (16)
+#define EMW3APP_WIFI_WEB_SERVER    (32)
+#define EMW3APP_EPD_CONTRAST       (1<<8)
+#define EMW3APP_DISPLAY_DATE       (1<<11)
+#define EMW3APP_12_HR              (1<<12)
+#define EMW3APP_STARTUP_INIT_SD    (1<<13)
+#define EMW3APP_SD_OK              (1<<14)
+#define EMW3APP_ROTATION           (1<<15)
+#define EMW3_WAKEUP_FROM_DEEPSLEEP (1<<16)
+#define EMW3APP_RTC_TRUST          (1<<17)
+#define EMW3APP_HAS_PARAMETER      (1<<18)
+#define EMW3APP_STRING_PARAMETER   (1<<19)
+#define EMW3APP_OTA_SUCCESSFUL     (1<<20)
+
+#ifdef EMW3APP_ENABLE_MESSAGE
+#define EMW3APP_MESSAGE_MAXSHOW 16 //最多支持的可显示的消息数目
+#endif
+
 #include <Arduino.h>
 #include <ArduinoJson.h>
 #include <pgmspace.h>
@@ -98,41 +139,11 @@
 #include "emw3.h"
 #include "listMenuV2.h"
 #include "emw3keyboard.h"
+#ifdef EMW3APP_ENABLE_WIFI
 #include "wireless.h"
-
-#define EMW3APP_BASE_PATH           "/EMW3/app/"              //应用默认路径
-#define EMW3APP_BASE_LIST_PATH      "/EMW3/app/apps.txt"      //应用路径列表
-//#define EMW3APP_BASE_NAME_PATH    "/EMW3/app/appnames.txt"  //应用名称列表
-#define EMW3APP_CONTROL_BMPPATH     "/EMW3/theme/control.bmp" //控制台贴图路径
-#define RTC_CheckSum1               3253342798ul              //RTC校验码
-#define EEPROM_CheckSum             WIRELESS_EEPROM_CheckSum  //EEPROM校验码
-#define INITIAL_SETTINGCONFIG       0x0000670eul              //默认设置
-#define EMW3APP_MAX_APPS            40                        //最大可安装app数
-#define EMW3APP_RTC_PARAM           0x60000                   //参数可用性校验
-
-//#define EMW3APP_DEBUG                                       //开启debug模式
-
-#define EMW3APP_WIFI_STA           (1)
-#define EMW3APP_AUTO_CONNECT       (2)
-#define EMW3APP_AUTO_RECONNECT     (4)
-#define EMW3APP_WIFI_PERSISTENT    (8)
-#define EMW3APP_WIFI_AP            (16)
-#define EMW3APP_WIFI_WEB_SERVER    (32)
-
-#define EMW3APP_EPD_CONTRAST       (1<<8)
-#define EMW3APP_DISPLAY_DATE       (1<<11)
-#define EMW3APP_12_HR              (1<<12)
-#define EMW3APP_STARTUP_INIT_SD    (1<<13)
-#define EMW3APP_SD_OK              (1<<14)
-#define EMW3APP_ROTATION           (1<<15)
-
-#define EMW3_WAKEUP_FROM_DEEPSLEEP (1<<16)
-#define EMW3APP_RTC_TRUST          (1<<17)
-#define EMW3APP_HAS_PARAMETER      (1<<18)
-#define EMW3APP_STRING_PARAMETER   (1<<19)
-#define EMW3APP_OTA_SUCCESSFUL     (1<<20)
-
 class wireless;
+#endif
+
 class EMW3App{
   public:
     /** @brief Construct a new EMW3App object
@@ -141,14 +152,32 @@ class EMW3App{
      *  @param in_fs_norm 常规工作的文件系统, 通常在LittleFS
      *  @param in_fs_load 加载用文件系统, 通常在SD卡上
      */
+#ifdef EMW3APP_ENABLE_WIFI
     EMW3App(EMW3 &emw3, listMenuV2 &in_menu, fs::FS &in_fs_norm = SDFS, fs::FS &in_fs_load = SDFS):
-    tft(&emw3), menu(&in_menu), fs_norm(&in_fs_norm), fs_load(&in_fs_load), wl(tft,menu), dispbuf(tft)
-    {
+    wl(&emw3,&in_menu), dispbuf(&emw3){
+#else
+    EMW3App(EMW3 &emw3, listMenuV2 &in_menu, fs::FS &in_fs_norm = SDFS, fs::FS &in_fs_load = SDFS):
+    dispbuf(&emw3){
+#endif
+      tft = &emw3;
+      menu = &in_menu;
+      fs_norm = &in_fs_norm;
+      fs_load = &in_fs_load;
       menu->setFS(in_fs_norm); //初始化各个模块的文件系统
+#ifdef EMW3APP_ENABLE_WIFI
       wl.setFS(in_fs_norm);
+#endif
       dispbuf.setColorDepth(1);
       dispbuf.fillScreen(1);
     }
+
+
+    /** @brief 连接到WiFi
+     *  @param auto_c 自动连接检测, 默认为1
+     *  @return uint8_t 连接状态,0为成功, 1为关闭, 2为打开但未连接, 3:未发现WiFi, 4:主动退出WiFi连接
+     */
+    uint8_t connectToWiFi(bool auto_c = 1);
+
     /** @brief  初始化app库(用于加载程序等功能)
      *  @return 0:rtc内容无效, 1:正常初始化
      */
@@ -162,6 +191,7 @@ class EMW3App{
      */
     uint8_t readParameter(uint8_t *dat);
     /** @brief 写入程序中的user rtc memory中的 param 字段, 最多88块
+     *  @note 建议在应用程序加载前的瞬间调用, 可以保证加载过程中时间的精度
      *  @return uint8_t 数据,长度256字节, 如果RTC内容不可信则返回0
      */
     uint8_t writeParameter(const uint8_t *dat, uint16_t len);
@@ -170,15 +200,15 @@ class EMW3App{
     /** @brief 从EEPROM加载全局用户设置数据
      *  @return 返回设置参数
      */
-    uint32_t appEepromRead() {  return wl.userAppData; }
+    uint32_t appEepromRead() {  return userAppData; }
     /** @brief 把全局用户设置数据写入EEPROM,但不保存
      *  @param dat 要写入的数据,数据写入后不会立即保存
      */
-    void appEepromWrite(uint32_t dat){ wl.userAppData = dat; }
+    void appEepromWrite(uint32_t dat){ userAppData = dat; }
     /** @brief 立即把全局用户设置数据写入EEPROM
      *  @param dat 要写入的数据,数据写入后立即保存
      */
-    void appEepromWriteImmediately(uint32_t dat){ wl.userAppData = dat; writeEeprom(); }
+    void appEepromWriteImmediately(uint32_t dat){ userAppData = dat; writeEeprom(); }
     /// @brief 加载应用程序列表(GUI), 需要带一个EMW3类
     uint16_t loadAppListGUI();
     /** @brief 加载应用程序列表(返回字符串), 需要两个字符串数组
@@ -208,7 +238,7 @@ class EMW3App{
      */
     //void loadBinCallback(String *fun_cb);
     /// @brief 返回应用程序内部编号
-    uint32_t getAppID() {return wl.userAppID;}
+    uint32_t getAppID() {return userAppID;}
     /// @brief 返回应用程序代号/包名, 只能是英文,数字或者下划线
     String getAppPath() {return appPath; }
     /// @brief 返回应用程序完整路径
@@ -217,12 +247,12 @@ class EMW3App{
      *  @param appID 指定的应用程序编号
      *  @return 应用程序代号/包名
      */
-    String getAppPath(uint8_t appID);
+    String getAppPath(uint16_t appID);
     /** @brief 返回指定应用程序完整路径/位置
      *  @param appID 指定的应用程序编号
      *  @return 应用程序路径/位置
      */
-    String getFullAppPath(uint8_t appID) {return String(F(EMW3APP_BASE_PATH))+getAppPath(appID); }
+    String getFullAppPath(uint16_t appID) {return String(F(EMW3APP_BASE_PATH))+getAppPath(appID); }
 
     /// @brief 手动设置当前应用程序名称
     void setAppNameManual(const char * nname) { appName = nname; };
@@ -264,52 +294,77 @@ class EMW3App{
     /// @brief 设置数据并保存
     inline void saveSetting(uint32_t got, uint8_t val){
       editSetting(got, val);
-      ESP.rtcUserMemoryWrite(33,&wl.emw3status,4);
-      writeEeprom(wl.userAppData);
+      ESP.rtcUserMemoryWrite(33,&emw3status,4);
+      writeEeprom(userAppData);
     }
     /// @brief 设置数据, 立即生效
     void editSettingImmediately(uint32_t got, uint8_t val);
     /// @brief 设置数据并保存, 立即生效
     inline void saveSettingImmediately(uint32_t got, uint8_t val){
       editSettingImmediately(got, val);
-      ESP.rtcUserMemoryWrite(33,&wl.emw3status,4);
-      writeEeprom(wl.userAppData);
+      ESP.rtcUserMemoryWrite(33,&emw3status,4);
+      writeEeprom(userAppData);
     }
     /// @brief 读取所有设置数据
-    inline uint32_t getSettings(){ return wl.emw3status; }
+    inline uint32_t getSettings(){ return emw3status; }
     /// @brief 读取设置数据
     inline uint8_t getSetting(uint32_t got){ 
-      if(EMW3APP_EPD_CONTRAST == got) return ((wl.emw3status>>8) & 7)+8;
-      return !!(wl.emw3status & got); 
+      if(EMW3APP_EPD_CONTRAST == got) return ((emw3status>>8) & 7)+8;
+      return !!(emw3status & got); 
     }
     /// @brief 保存设置数据于EEPROM中,目标地址为0, EEPROM默认使用1KB数据存储
     void commitSettings();
-    
+#ifdef EMW3APP_ENABLE_WIFI
     /// @brief 返回wifi设置基础类, 可以由用户调用其函数
     wireless &wifiSettings() { return wl; }
-    /// @brief 同步把需要的数据写入到EEPROM
-    void writeEeprom(uint32_t dat = 0) { wl.userAppData = dat; wl.writeEeprom_impl(); };
     /// @brief 获取NTP时间
     time_t getNTPTime() { return wl.getNTPTime(); }
+#else
+    time_t getNTPTime() { return 0; }
+#endif
+    /// @brief 同步把需要的数据写入到EEPROM
+    void writeEeprom(uint32_t dat = 0) { userAppData = dat; writeEeprom_impl(); };
     /** @brief 可以带参数进行定时深度睡眠, 手动按下reset将会导致时钟不准
      *  @param sleepTimeMs 时间,单位是毫秒. 尝试一个过大的时间可能会导致模块无法唤醒.
      * */
     void deepSleep(unsigned int sleepTimeMs, bool disp = 1, const uint8_t *dat = nullptr, uint16_t len = 0);
     unsigned int getchs(char *ws,unsigned int wslen,const char * msg = nullptr);
-
+#ifdef EMW3APP_ENABLE_MESSAGE
+    typedef struct {
+      String title;
+      String text;
+      time_t sendTime;
+      void (*f_cb)();
+    } emw3message;
+    void sendMessageNow(emw3message msg);
+#endif
   private:
     //在此存储基本设置
-    String appName;
-    String appPath;
-    EMW3 * tft;
-    listMenuV2 * menu;
-    fs::FS * fs_norm;
-    fs::FS * fs_load;
+    static String appName;
+    static String appPath;
+    static EMW3 * tft;
+    static listMenuV2 * menu;
+    static fs::FS * fs_norm;
+    static fs::FS * fs_load;
+#ifdef EMW3APP_ENABLE_WIFI
     wireless wl;
+#endif
     LGFX_Sprite dispbuf;
-
+    /** @brief 设置状态字, 通过Eeprom或者rtcUserMemory可以保留用于其他app
+     * 见上面文件brief
+     */ 
+    static uint32_t emw3status;
+    static uint32_t userAppData;
+    static uint16_t userAppID;   //当前应用代号
+    static uint16_t userAppHue;  //读取到的应用数量
+#ifdef EMW3APP_ENABLE_MESSAGE
+    static emw3message *mshow[EMW3APP_MESSAGE_MAXSHOW];
+    static uint8_t mshowCnt;  //读取到的消息数量
+#endif
+    /// @brief 写入到EEPROM
+    void writeEeprom_impl();
     /// @brief 初始化应用程序模块
-    void initAppInfo_impl(uint32_t id);
+    void initAppInfo_impl(uint16_t id);
     /// @brief 进入设置页面的辅助绘图函数
     void settingPageGUI(uint8_t cp);
     /// @brief 进入设置页面的快速辅助绘图函数

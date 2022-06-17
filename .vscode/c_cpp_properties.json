@@ -63,7 +63,6 @@
                 "C:/Users/1/.platformio/packages/framework-arduinoespressif8266/libraries/lwIP_enc28j60/src",
                 "C:/Users/1/.platformio/packages/framework-arduinoespressif8266/libraries/lwIP_w5100/src",
                 "C:/Users/1/.platformio/packages/framework-arduinoespressif8266/libraries/lwIP_w5500/src",
-                "C:/Users/1/.platformio/packages/tool-unity",
                 ""
             ],
             "browse": {
@@ -124,12 +123,11 @@
                     "C:/Users/1/.platformio/packages/framework-arduinoespressif8266/libraries/lwIP_enc28j60/src",
                     "C:/Users/1/.platformio/packages/framework-arduinoespressif8266/libraries/lwIP_w5100/src",
                     "C:/Users/1/.platformio/packages/framework-arduinoespressif8266/libraries/lwIP_w5500/src",
-                    "C:/Users/1/.platformio/packages/tool-unity",
                     ""
                 ]
             },
             "defines": [
-                "PLATFORMIO=50205",
+                "PLATFORMIO=60002",
                 "ESP8266",
                 "ARDUINO_ARCH_ESP8266",
                 "ARDUINO_ESP8266_NODEMCU_ESP12E",

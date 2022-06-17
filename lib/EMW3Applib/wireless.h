@@ -25,13 +25,13 @@
   --------JSON解码示例程序--------
   SDFS.begin(EMW3_SD_CS_PIN);
   File jsonFile = SDFS.open(WIRELESS_WIFI_JSON_PATH,"r");
-  if(!jsonFile) while(1) yield();
+  if(!jsonFile) for(;;) yield();
   DynamicJsonDocument wifiList(512);
   DeserializationError error = deserializeJson(wifiList,jsonFile);
     if (error) {
     Serial.print(F("deserializeJson() failed: "));
     Serial.println(error.f_str());
-    while(1) yield();
+    for(;;) yield();
   }
   Serial.println(wifiList["w"][0]["s"].as<const char *>());
   Serial.println(wifiList["w"][0]["p"].as<const char *>());
@@ -56,7 +56,6 @@
 
 #define WIRELESS_WIFI_JSON_PATH   "/EMW3/wifi.json"
 #define WIFI_CONNECT_MAX_TIME_MS  10000
-#define WIRELESS_EEPROM_CheckSum  180327370ul         //EEPROM校验码
 #define _NTP_SERVERS              4                         //NTP 服务器数
 //#define WIRELESS_DEBUG
 class wireless{
@@ -66,11 +65,6 @@ public:
     menu->setFS(SDFS);
   }
   inline void setFS(fs::FS &ing_FS){ wireless_fs = &ing_FS; menu->setFS(ing_FS); }
-  /** @brief 连接到WiFi
-   *  @param auto_c 自动连接检测, 默认为1
-   *  @return uint8_t 连接状态,0为成功, 1为关闭, 2为打开但未连接, 3:未发现WiFi, 4:主动退出WiFi连接
-   */
-  uint8_t connectToWiFi(bool auto_c = 1);
   uint8_t connectToWiFi_direct(bool allowSearch = 1, const String &ssid = emptyString, const String &pswd = emptyString);
   uint8_t connectToWiFi_search();
   uint8_t connectToWiFi_scan();
@@ -99,8 +93,6 @@ private:
    *  @return String 密码, 未发现则返回空串
    */ 
   String selectWiFiFromJson(const char *s, DynamicJsonDocument &wifiList);
-  /// @brief 写入到EEPROM
-  void writeEeprom_impl();
   friend void show_psk(uint16_t stage, void *jsonDoc);
   friend class EMW3App; //此声明意味着 EMW3App是自己人, 资源随便访问
   EMW3 * tft;
@@ -109,11 +101,6 @@ private:
   DynamicJsonDocument *wjsonDoc;
   static String wl_ssid;
   static String wl_psk;
-    /** @brief 设置状态字, 通过Eeprom或者rtcUserMemory可以保留用于其他app
-     * 见上面文件brief
-     */ 
-    uint32_t emw3status = 0;
-    uint32_t userAppID,userAppData;
     /// @brief 屏幕内容缓存, 用于截屏,只支持单色截屏
   
     /*----------------- NTP code ------------------*/

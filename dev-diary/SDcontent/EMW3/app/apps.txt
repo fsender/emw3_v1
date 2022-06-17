@@ -1,8 +1,5 @@
-4
-EPDReader
-MP3_Player
+1
 SimpleClock
-FileExplorer
 
 ****************注意事项****************
 1.请在编辑器打开之后, 以utf-8保存, 行尾使用

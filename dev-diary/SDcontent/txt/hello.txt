@@ -1,14 +1,3 @@
 Hello world
-
-nin  an  xia  l  shubiao   22 ci 
-nin  an  xia  l  shubiao   23 ci 
-13579abcdedaisiesdaisiesdaisiesdaisiesdaisiesdancedancedancepinatafuturemustachetrickedouttrickedoutmustachetrickedoutmustachetrickedout
-daisiesdancepinatafuturemustachetrickedoutsukhbir
- 13ff
- 13DV*de 13ff7DV5*de
- 13ff7DV5*de 13 13ff7DV5*de e
-D1
-ftp://dygod1:dygod1@d204.dygod.cn:2361
-CD2
-ftp://dygod2:dygod2@d204.dygod.cn:236
-http://arduino.esp8266.com/stable/package_esp8266com_index.json
+你好, 世界
+文本阅读器已经就绪

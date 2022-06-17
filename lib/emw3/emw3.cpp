@@ -82,7 +82,7 @@ uint8_t EMW3::display(uint8_t part){
           //Serial.print(char('a'+pixelprint));
           wp[(j>>2)-1] = 'a'+pixelprint;
         }
-        //Serial.println(wp);
+        Serial.println(wp);
         yield();
       }
       if(part>=2 && part <4) while(millis() - lastRefresh <= SERIAL_REFRESH_TIME) yield();

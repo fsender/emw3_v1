@@ -64,6 +64,6 @@
 #define EMW3_REAL_WIDTH 122
 #define EMW3_WIDTH 128
 #define EMW3_HEIGHT 250
-#define EMW3_WHITE 65535
+#define EMW3_WHITE 1
 #define EMW3_BLACK 0
 #endif
